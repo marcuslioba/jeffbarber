@@ -295,6 +295,13 @@
             color: #ffc107;
         }
 
+        .filter-buttons {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+
         @media (max-width: 768px) {
             .sidebar { width: 70px; padding: 10px; }
             .sidebar span, .logo-area h1 { display: none; }
@@ -337,11 +344,16 @@
         <div id="dashboard" class="tab-content active">
             <div class="header-title">
                 <h2>Resumo Executivo</h2>
+                <div class="filter-buttons">
+                    <button class="btn btn-small" onclick="setFiltroDashboard(7)">7 dias</button>
+                    <button class="btn btn-small" onclick="setFiltroDashboard(15)">15 dias</button>
+                    <button class="btn btn-small btn-secondary" onclick="setFiltroDashboard(30)">30 dias</button>
+                </div>
             </div>
             
             <div class="stats-grid">
                 <div class="stat-card">
-                    <h3>Receita Mensal</h3>
+                    <h3>Receita no Período</h3>
                     <div class="value" id="receitaMes">R$ 0,00</div>
                 </div>
                 <div class="stat-card">
@@ -349,7 +361,7 @@
                     <div class="value" id="ticketMedio">R$ 0,00</div>
                 </div>
                 <div class="stat-card">
-                    <h3>Visitas no Mês</h3>
+                    <h3>Visitas no Período</h3>
                     <div class="value" id="totalVisitas">0</div>
                 </div>
                 <div class="stat-card">
@@ -368,6 +380,17 @@
                 <div class="card">
                     <h2>👑 Top Clientes</h2>
                     <ul class="item-list" id="vipListShort"></ul>
+                </div>
+            </div>
+
+            <div class="grid-2">
+                <div class="card">
+                    <h2>📅 Dias de Maior Movimento</h2>
+                    <ul class="item-list" id="diasMovimento"></ul>
+                </div>
+                <div class="card">
+                    <h2>💳 Formas de Pagamento</h2>
+                    <ul class="item-list" id="formasPagamento"></ul>
                 </div>
             </div>
         </div>
@@ -408,6 +431,10 @@
             <div class="card">
                 <h2>📈 Clientes em crescimento (frequência)</h2>
                 <ul class="item-list" id="crmCrescentes"></ul>
+            </div>
+            <div class="card">
+                <h2>📉 Clientes em declínio (frequência)</h2>
+                <ul class="item-list" id="crmDeclinio"></ul>
             </div>
         </div>
 
@@ -486,10 +513,11 @@
     <div id="transacaoModal" class="modal">
         <div class="modal-content">
             <div class="modal-header">
-                <h2>Nova Transação</h2>
+                <h2 id="transacaoModalTitle">Nova Transação</h2>
                 <span class="close" onclick="closeModal('transacaoModal')">&times;</span>
             </div>
             <form id="transacaoForm">
+                <input type="hidden" id="transacaoId">
                 <div class="form-group">
                     <label>Tipo</label>
                     <select id="transacaoTipo" required>
@@ -525,7 +553,7 @@
                         </select>
                     </div>
                 </div>
-                <button type="submit" class="btn">Registrar Transação</button>
+                <button type="submit" class="btn" id="transacaoSubmitBtn">Registrar Transação</button>
             </form>
         </div>
     </div>
@@ -557,6 +585,7 @@
         let transacoes = [];
         let clientes = [];
         let financeChart = null;
+        let filtroDashboardDias = 30;
 
         // Navegação
         function switchTab(tabName, element) {
@@ -578,6 +607,13 @@
 
         function closeModal(id) {
             document.getElementById(id).style.display = 'none';
+            if(id === 'transacaoModal') {
+                document.getElementById('transacaoForm').reset();
+                document.getElementById('transacaoId').value = '';
+                document.getElementById('transacaoModalTitle').textContent = 'Nova Transação';
+                document.getElementById('transacaoSubmitBtn').textContent = 'Registrar Transação';
+                document.getElementById('transacaoData').valueAsDate = new Date();
+            }
         }
 
         window.onclick = function(event) {
@@ -645,49 +681,74 @@
             document.getElementById('transacaoData').valueAsDate = new Date();
         }
 
+        // Dashboard - Filtro
+        function setFiltroDashboard(dias) {
+            filtroDashboardDias = dias;
+            document.querySelectorAll('.filter-buttons .btn').forEach(b => {
+                b.classList.remove('btn-secondary');
+                b.classList.add('btn-small');
+            });
+            event.target.classList.add('btn-secondary');
+            updateDashboard();
+        }
+
         // Dashboard
         function updateDashboard() {
             const agora = new Date();
-            const esteMes = transacoes.filter(t => {
+            const inicioFiltro = new Date(agora.getTime() - filtroDashboardDias * 24 * 60 * 60 * 1000);
+
+            const estePeriodo = transacoes.filter(t => {
                 const dt = new Date(t.data);
-                return t.tipo === 'receita' && mesmaCompetencia(dt, agora);
+                return t.tipo === 'receita' && dt >= inicioFiltro && dt <= agora;
             });
 
-            const total = esteMes.reduce((acc, t) => acc + Number(t.valor || 0), 0);
-            const media = esteMes.length > 0 ? total / esteMes.length : 0;
+            const total = estePeriodo.reduce((acc, t) => acc + Number(t.valor || 0), 0);
+            const media = estePeriodo.length > 0 ? total / estePeriodo.length : 0;
 
             const novos = clientes.filter(c => {
                 const dt = new Date(c.dataCadastro);
-                return mesmaCompetencia(dt, agora);
+                return dt >= inicioFiltro && dt <= agora;
             }).length;
 
             document.getElementById('receitaMes').textContent = formatMoney(total);
             document.getElementById('ticketMedio').textContent = formatMoney(media);
-            document.getElementById('totalVisitas').textContent = esteMes.length;
+            document.getElementById('totalVisitas').textContent = estePeriodo.length;
             document.getElementById('novosClientes').textContent = novos;
 
-            renderChart(esteMes);
+            renderChart(estePeriodo, inicioFiltro, agora);
+            renderDiasMovimento(estePeriodo);
+            renderFormasPagamento(estePeriodo);
         }
 
-        function renderChart(esteMes) {
+        function renderChart(estePeriodo, inicioFiltro, agora) {
             const ctx = document.getElementById('financeChart').getContext('2d');
             if (financeChart) financeChart.destroy();
 
-            const valoresPorSemana = [0, 0, 0, 0];
-            esteMes.forEach(t => {
-                const d = new Date(t.data);
-                const dia = d.getDate();
-                const indiceSemana = dia <= 7 ? 0 : dia <= 14 ? 1 : dia <= 21 ? 2 : 3;
-                valoresPorSemana[indiceSemana] += Number(t.valor || 0);
-            });
+            const labels = [];
+            const valores = [];
+            const numDias = filtroDashboardDias;
+
+            for (let i = 0; i < numDias; i++) {
+                const dia = new Date(inicioFiltro.getTime() + i * 24 * 60 * 60 * 1000);
+                labels.push(dia.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' }));
+                
+                const valorDia = estePeriodo
+                    .filter(t => {
+                        const dt = new Date(t.data);
+                        return dt.toDateString() === dia.toDateString();
+                    })
+                    .reduce((acc, t) => acc + Number(t.valor || 0), 0);
+                
+                valores.push(valorDia);
+            }
 
             financeChart = new Chart(ctx, {
                 type: 'line',
                 data: {
-                    labels: ['Sem 1', 'Sem 2', 'Sem 3', 'Sem 4'],
+                    labels: labels,
                     datasets: [{
                         label: 'Faturamento',
-                        data: valoresPorSemana,
+                        data: valores,
                         borderColor: '#c5a059',
                         tension: 0.4,
                         fill: true,
@@ -700,22 +761,89 @@
                     plugins: { legend: { display: false } },
                     scales: {
                         y: { grid: { color: '#2c3138' }, ticks: { color: '#a0a0a0' } },
-                        x: { grid: { display: false }, ticks: { color: '#a0a0a0' } }
+                        x: { grid: { display: false }, ticks: { color: '#a0a0a0', maxTicksLimit: 10 } }
                     }
                 }
             });
         }
 
+        function renderDiasMovimento(estePeriodo) {
+            const diasSemana = ['Domingo', 'Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado'];
+            const mapa = {};
+
+            estePeriodo.forEach(t => {
+                const dt = new Date(t.data);
+                const dia = diasSemana[dt.getDay()];
+                if (!mapa[dia]) mapa[dia] = { total: 0, visitas: 0 };
+                mapa[dia].total += Number(t.valor || 0);
+                mapa[dia].visitas += 1;
+            });
+
+            const ranking = Object.entries(mapa)
+                .map(([dia, info]) => ({ dia, ...info }))
+                .sort((a, b) => b.visitas - a.visitas)
+                .slice(0, 3);
+
+            const list = document.getElementById('diasMovimento');
+            if (ranking.length === 0) {
+                list.innerHTML = `<li class="list-item"><div>Nenhum dado no período</div></li>`;
+                return;
+            }
+
+            list.innerHTML = ranking.map((d, i) => `
+                <li class="list-item">
+                    <div>
+                        <strong>${d.dia}</strong><br>
+                        <small>${d.visitas} visita(s) · ${formatMoney(d.total)}</small>
+                    </div>
+                    <span class="badge badge-gold">#${i + 1}</span>
+                </li>
+            `).join('');
+        }
+
+        function renderFormasPagamento(estePeriodo) {
+            const mapa = {};
+
+            estePeriodo.forEach(t => {
+                const forma = t.pagamento || 'não informado';
+                if (!mapa[forma]) mapa[forma] = { total: 0, visitas: 0 };
+                mapa[forma].total += Number(t.valor || 0);
+                mapa[forma].visitas += 1;
+            });
+
+            const ranking = Object.entries(mapa)
+                .map(([forma, info]) => ({ forma, ...info }))
+                .sort((a, b) => b.total - a.total);
+
+            const list = document.getElementById('formasPagamento');
+            if (ranking.length === 0) {
+                list.innerHTML = `<li class="list-item"><div>Nenhum dado no período</div></li>`;
+                return;
+            }
+
+            list.innerHTML = ranking.map(f => `
+                <li class="list-item">
+                    <div>
+                        <strong>${f.forma.toUpperCase()}</strong><br>
+                        <small>${f.visitas} transação(ões)</small>
+                    </div>
+                    <span class="badge badge-success">${formatMoney(f.total)}</span>
+                </li>
+            `).join('');
+        }
+
         function renderTopClientes() {
             const agora = new Date();
-            const receitasMes = transacoes.filter(t => {
+            const inicioFiltro = new Date(agora.getTime() - filtroDashboardDias * 24 * 60 * 60 * 1000);
+
+            const receitasPeriodo = transacoes.filter(t => {
                 if (t.tipo !== 'receita') return false;
                 const dt = new Date(t.data);
-                return mesmaCompetencia(dt, agora);
+                return dt >= inicioFiltro && dt <= agora;
             });
 
             const mapa = {};
-            receitasMes.forEach(t => {
+            receitasPeriodo.forEach(t => {
                 if (!t.clienteId) return;
                 if (!mapa[t.clienteId]) {
                     mapa[t.clienteId] = { total: 0, visitas: 0 };
@@ -729,7 +857,7 @@
                     const cliente = clientes.find(c => c.id === clienteId);
                     return {
                         id: clienteId,
-                        nome: cliente?.nome || 'Cliente sem nome',
+                        nome: cliente ? cliente.nome : `ID: ${clienteId.slice(0, 8)}...`,
                         total: info.total,
                         visitas: info.visitas
                     };
@@ -888,7 +1016,9 @@
         document.getElementById('transacaoForm').addEventListener('submit', async (e) => {
             e.preventDefault();
             const tipo = document.getElementById('transacaoTipo').value;
-            const nova = {
+            const transacaoId = document.getElementById('transacaoId').value;
+
+            const dados = {
                 tipo: tipo,
                 clienteId: tipo === 'receita' ? document.getElementById('transacaoCliente').value : null,
                 descricao: document.getElementById('transacaoDesc').value,
@@ -897,11 +1027,50 @@
                 pagamento: document.getElementById('transacaoPagamento').value,
                 timestamp: new Date().toISOString()
             };
-            await db.collection('transacoes').add(nova);
+
+            if (transacaoId) {
+                // Editar
+                await db.collection('transacoes').doc(transacaoId).update(dados);
+            } else {
+                // Criar
+                await db.collection('transacoes').add(dados);
+            }
+
             e.target.reset();
             document.getElementById('transacaoData').valueAsDate = new Date();
             closeModal('transacaoModal');
         });
+
+        function editarTransacao(id) {
+            const t = transacoes.find(tr => tr.id === id);
+            if (!t) return;
+
+            document.getElementById('transacaoId').value = t.id;
+            document.getElementById('transacaoTipo').value = t.tipo;
+            document.getElementById('transacaoCliente').value = t.clienteId || '';
+            document.getElementById('transacaoDesc').value = t.descricao;
+            document.getElementById('transacaoValor').value = t.valor;
+            document.getElementById('transacaoData').value = t.data;
+            document.getElementById('transacaoPagamento').value = t.pagamento;
+
+            document.getElementById('transacaoModalTitle').textContent = 'Editar Transação';
+            document.getElementById('transacaoSubmitBtn').textContent = 'Salvar Alterações';
+
+            if (t.tipo === 'despesa') {
+                document.getElementById('clienteSelectGroup').style.display = 'none';
+                document.getElementById('transacaoCliente').required = false;
+            } else {
+                document.getElementById('clienteSelectGroup').style.display = 'block';
+                document.getElementById('transacaoCliente').required = true;
+            }
+
+            openModal('transacaoModal');
+        }
+
+        async function deletarTransacao(id) {
+            if (!confirm('Tem certeza que deseja excluir esta transação?')) return;
+            await db.collection('transacoes').doc(id).delete();
+        }
 
         function renderFinanceiro() {
             const agora = new Date();
@@ -940,9 +1109,17 @@
                                 ${t.pagamento}
                             </small>
                         </div>
-                        <span class="badge ${t.tipo === 'receita' ? 'badge-success' : 'badge-danger'}">
-                            ${t.tipo === 'receita' ? '+' : '-'} ${formatMoney(t.valor)}
-                        </span>
+                        <div class="list-item-actions">
+                            <span class="badge ${t.tipo === 'receita' ? 'badge-success' : 'badge-danger'}">
+                                ${t.tipo === 'receita' ? '+' : '-'} ${formatMoney(t.valor)}
+                            </span>
+                            <button class="btn btn-small" onclick="editarTransacao('${t.id}')">
+                                <i class="fas fa-edit"></i>
+                            </button>
+                            <button class="btn btn-danger btn-small" onclick="deletarTransacao('${t.id}')">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </div>
                     </li>
                 `;
             }).join('');
@@ -1099,6 +1276,7 @@
 
             renderAniversarios();
             renderCrescentes();
+            renderDeclinio();
         }
 
         // CRM - Aniversários
@@ -1215,6 +1393,69 @@
                         <div>
                             <strong>${c.nome}</strong><br>
                             <small>${textoCrescimento}</small>
+                        </div>
+                        <a href="${linkWhatsApp(c.telefone, msg)}" 
+                           target="_blank" class="btn btn-small">
+                            <i class="fab fa-whatsapp"></i>
+                        </a>
+                    </li>
+                `;
+            }).join('');
+        }
+
+        // CRM - Clientes em declínio de frequência
+        function renderDeclinio() {
+            const lista = document.getElementById('crmDeclinio');
+            const hoje = new Date();
+            const msDia = 24 * 60 * 60 * 1000;
+            const inicioJanelaAtual = new Date(hoje.getTime() - 60 * msDia);
+            const inicioJanelaAnterior = new Date(hoje.getTime() - 120 * msDia);
+
+            const declinio = [];
+
+            clientes.forEach(c => {
+                const visitas = getVisitasCliente(c.id);
+                if (visitas.length < 2) return;
+
+                const recentes = visitas.filter(v => {
+                    const d = new Date(v.data);
+                    return d >= inicioJanelaAtual && d <= hoje;
+                });
+                const antigas = visitas.filter(v => {
+                    const d = new Date(v.data);
+                    return d >= inicioJanelaAnterior && d < inicioJanelaAtual;
+                });
+
+                const numRecentes = recentes.length;
+                const numAntigas = antigas.length;
+
+                if (numAntigas >= 2 && numRecentes < numAntigas) {
+                    const deltaAbs = numAntigas - numRecentes;
+                    const deltaPerc = ((numAntigas - numRecentes) / numAntigas) * 100;
+                    declinio.push({ cliente: c, numRecentes, numAntigas, deltaAbs, deltaPerc });
+                }
+            });
+
+            if (declinio.length === 0) {
+                lista.innerHTML = `<li class="list-item">
+                    <div><strong>Nenhum cliente reduziu a frequência nos últimos 60 dias.</strong></div>
+                </li>`;
+                return;
+            }
+
+            declinio.sort((a, b) => b.deltaAbs - a.deltaAbs);
+
+            lista.innerHTML = declinio.map(o => {
+                const c = o.cliente;
+                const textoDeclinio = `Declínio de ${o.deltaAbs} visita(s): ${o.numRecentes} nos últimos 60 dias vs ${o.numAntigas} no período anterior (${o.deltaPerc.toFixed(0)}% a menos).`;
+
+                const msg = `Olá ${c.nome}, tudo bem? Aqui é da Jeff Barber. Notamos que você tem vindo menos ultimamente e queríamos saber se está tudo certo. Se precisar de algo ou quiser agendar um horário, estamos à disposição! 😊`;
+
+                return `
+                    <li class="list-item">
+                        <div>
+                            <strong>${c.nome}</strong><br>
+                            <small>${textoDeclinio}</small>
                         </div>
                         <a href="${linkWhatsApp(c.telefone, msg)}" 
                            target="_blank" class="btn btn-small">
