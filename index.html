@@ -1,557 +1,1231 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-  <meta charset="UTF-8"/>
-  <meta name="viewport" content="width=device-width, initial-scale=1"/>
-  <title>Dashboard de Vendas - Tempo Real</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
-  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
-  <style>
-    :root{
-      --brand:#FF500A;
-      --brand-600:#e04909;
-      --ok:#10b981;
-      --down:#ef4444;
-      --ink:#1f2937;
-      --muted:#6b7280;
-      --bg:#f6f7fb;
-      --card:#ffffff;
-      --ring:rgba(0,0,0,.06);
-    }
-    *{box-sizing:border-box}
-    html,body{height:100%}
-    body{
-      margin:0;background:var(--bg);color:var(--ink);
-      font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,'Helvetica Neue',Arial;
-      line-height:1.45;
-    }
-    .container{max-width:1280px;margin:0 auto;padding:20px}
-    .header{
-      display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;
-    }
-    .brand{
-      display:flex;align-items:center;gap:12px;
-      color:var(--ink);
-    }
-    .logo{
-      width:44px;height:44px;border-radius:10px;
-      background:linear-gradient(135deg,var(--brand) 0%, #ff8a4a 100%);
-      display:grid;place-items:center;color:#fff;font-weight:900;font-size:20px;
-      box-shadow:0 8px 18px rgba(255,80,10,.25);
-    }
-    .title{font-size:1.4rem;font-weight:800}
-    .subtitle{font-size:.9rem;color:var(--muted);margin-top:2px}
-    .sync{
-      display:flex;align-items:center;gap:10px;background:var(--card);
-      padding:8px 14px;border-radius:999px;box-shadow:0 1px 2px var(--ring),0 8px 24px var(--ring);
-      font-weight:700;color:var(--brand);
-    }
-    .dot{width:10px;height:10px;border-radius:50%;background:var(--ok)}
-    .toolbar{
-      display:flex;gap:12px;flex-wrap:wrap;margin-bottom:14px
-    }
-    .select{
-      flex:1;min-width:260px;background:var(--card);border-radius:12px;
-      padding:10px 12px;box-shadow:0 1px 2px var(--ring),0 8px 24px var(--ring);
-      border:1px solid #eee;
-    }
-    .select select{
-      width:100%;padding:10px 12px;border:2px solid var(--brand);border-radius:8px;
-      background:#fff;font-weight:700;color:var(--ink)
-    }
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Jeff Barber CRM | Inteligente</title>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --primary: #c5a059;
+            --bg-dark: #121417;
+            --card-bg: #1e2126;
+            --sidebar-bg: #1a1d21;
+            --text-main: #e0e0e0;
+            --text-muted: #a0a0a0;
+            --accent: #2c3138;
+            --success: #27ae60;
+            --danger: #e74c3c;
+        }
 
-    .metrics{
-      display:grid;grid-template-columns:repeat(6,1fr);gap:12px;margin-bottom:14px
-    }
-    .card{
-      background:var(--card);border-radius:14px;padding:14px;
-      box-shadow:0 1px 2px var(--ring),0 8px 24px var(--ring);
-    }
-    .metric-label{color:var(--muted);font-size:.78rem;letter-spacing:.3px;text-transform:uppercase;font-weight:800;margin-bottom:4px}
-    .metric-value{font-weight:900;color:var(--brand);font-size:1.4rem}
-    .trend{margin-top:4px;font-weight:700;font-size:.92rem}
-    .up{color:var(--ok)} .down{color:var(--down)}
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Inter', 'Segoe UI', sans-serif;
+        }
 
-    .grid-2-1{display:grid;grid-template-columns:2fr 1fr;gap:12px;margin-bottom:14px}
-    .grid-2{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;margin-bottom:14px}
-    .card-title{font-weight:800;margin-bottom:8px;display:flex;align-items:center;gap:8px}
-    .canvas-wrap{height:220px}
-    .canvas-wrap.sm{height:200px}
-    .gauge-wrap{height:140px;display:flex;align-items:center;justify-content:center}
+        body {
+            background-color: var(--bg-dark);
+            color: var(--text-main);
+            display: flex;
+            min-height: 100vh;
+        }
 
-    .tops{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;margin-bottom:14px}
-    .top-item{display:flex;align-items:center;justify-content:space-between;background:#f8fafc;border-radius:10px;padding:8px 10px;margin-bottom:8px}
-    .top-rank{font-size:1.1rem;font-weight:900;margin-right:10px}
-    .top-name{flex:1;font-weight:700}
-    .top-val{font-weight:900;color:var(--brand)}
+        .sidebar {
+            width: 260px;
+            background: var(--sidebar-bg);
+            border-right: 1px solid var(--accent);
+            display: flex;
+            flex-direction: column;
+            padding: 20px;
+            position: fixed;
+            height: 100vh;
+            overflow-y: auto;
+        }
 
-    .table-card{overflow:auto}
-    table{width:100%;border-collapse:collapse}
-    th{background:var(--brand);color:#fff;padding:10px;text-align:left;font-weight:800}
-    td{padding:10px;border-bottom:1px solid #eee}
-    tr:hover{background:#fff5f0}
+        .logo-area {
+            text-align: center;
+            padding-bottom: 30px;
+            border-bottom: 1px solid var(--accent);
+            margin-bottom: 20px;
+        }
 
-    @media (max-width:1100px){
-      .metrics{grid-template-columns:repeat(3,1fr)}
-      .grid-2-1{grid-template-columns:1fr}
-      .grid-2{grid-template-columns:1fr}
-      .tops{grid-template-columns:1fr}
-      .canvas-wrap{height:220px}
-    }
-    @media (max-width:640px){
-      .metrics{grid-template-columns:repeat(2,1fr)}
-      .title{font-size:1.1rem}
-      .logo{width:40px;height:40px;font-size:18px}
-    }
-  </style>
+        .logo-area h1 {
+            color: var(--primary);
+            font-size: 22px;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+        }
+
+        .nav-menu {
+            list-style: none;
+            flex-grow: 1;
+        }
+
+        .nav-item {
+            padding: 12px 15px;
+            border-radius: 10px;
+            cursor: pointer;
+            margin-bottom: 8px;
+            transition: 0.3s;
+            display: flex;
+            align-items: center;
+            color: var(--text-muted);
+            font-weight: 500;
+        }
+
+        .nav-item i {
+            margin-right: 12px;
+            width: 20px;
+            text-align: center;
+        }
+
+        .nav-item:hover, .nav-item.active {
+            background: var(--accent);
+            color: var(--primary);
+        }
+
+        .main-content {
+            margin-left: 260px;
+            flex-grow: 1;
+            padding: 30px;
+            width: calc(100% - 260px);
+        }
+
+        .header-title {
+            margin-bottom: 30px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .header-title h2 {
+            font-size: 24px;
+            color: var(--text-main);
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .stat-card {
+            background: var(--card-bg);
+            padding: 20px;
+            border-radius: 15px;
+            border: 1px solid var(--accent);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .stat-card::after {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; width: 4px; height: 100%;
+            background: var(--primary);
+        }
+
+        .stat-card h3 {
+            font-size: 13px;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            margin-bottom: 10px;
+        }
+
+        .stat-card .value {
+            font-size: 24px;
+            font-weight: 700;
+            color: var(--primary);
+        }
+
+        .grid-2 {
+            display: grid;
+            grid-template-columns: 2fr 1fr;
+            gap: 20px;
+        }
+
+        .card {
+            background: var(--card-bg);
+            border-radius: 15px;
+            padding: 25px;
+            border: 1px solid var(--accent);
+            margin-bottom: 20px;
+        }
+
+        .card h2 {
+            font-size: 18px;
+            margin-bottom: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .form-group { margin-bottom: 15px; }
+        label { display: block; margin-bottom: 5px; font-size: 14px; color: var(--text-muted); }
+        input, select, textarea {
+            width: 100%;
+            background: var(--bg-dark);
+            border: 1px solid var(--accent);
+            padding: 10px;
+            border-radius: 8px;
+            color: white;
+            outline: none;
+        }
+        input:focus, select:focus, textarea:focus { border-color: var(--primary); }
+
+        .btn {
+            background: var(--primary);
+            color: #000;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 8px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: 0.3s;
+        }
+
+        .btn:hover { opacity: 0.8; transform: translateY(-2px); }
+
+        .btn-secondary {
+            background: var(--accent);
+            color: var(--text-main);
+        }
+
+        .btn-danger {
+            background: var(--danger);
+            color: white;
+        }
+
+        .btn-small {
+            padding: 5px 12px;
+            font-size: 12px;
+        }
+
+        .item-list { list-style: none; }
+        .list-item {
+            background: var(--accent);
+            margin-bottom: 10px;
+            padding: 15px;
+            border-radius: 10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .list-item-actions {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        .badge {
+            padding: 4px 10px;
+            border-radius: 6px;
+            font-size: 11px;
+            font-weight: bold;
+        }
+
+        .badge-gold { background: var(--primary); color: black; }
+        .badge-success { background: var(--success); color: white; }
+        .badge-danger { background: var(--danger); color: white; }
+
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.7);
+            overflow-y: auto;
+        }
+
+        .modal-content {
+            background-color: var(--card-bg);
+            margin: 5% auto;
+            padding: 30px;
+            border: 1px solid var(--accent);
+            border-radius: 15px;
+            width: 90%;
+            max-width: 600px;
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .close {
+            color: var(--text-muted);
+            font-size: 28px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        .close:hover { color: var(--primary); }
+
+        .grid-3 {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 15px;
+        }
+
+        .alert {
+            padding: 12px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+        }
+
+        .alert-warning {
+            background: rgba(255, 193, 7, 0.1);
+            border: 1px solid rgba(255, 193, 7, 0.3);
+            color: #ffc107;
+        }
+
+        @media (max-width: 768px) {
+            .sidebar { width: 70px; padding: 10px; }
+            .sidebar span, .logo-area h1 { display: none; }
+            .main-content { margin-left: 70px; width: calc(100% - 70px); }
+            .grid-2, .grid-3 { grid-template-columns: 1fr; }
+        }
+
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: var(--bg-dark); }
+        ::-webkit-scrollbar-thumb { background: var(--accent); border-radius: 10px; }
+    </style>
 </head>
 <body>
-  <div class="container">
-    <div class="header">
-      <div class="brand">
-        <div class="logo">DV</div>
-        <div>
-          <div class="title">Dashboard de Vendas</div>
-          <div class="subtitle">Tempo real • minimalista</div>
+
+    <aside class="sidebar">
+        <div class="logo-area">
+            <h1>JEFF BARBER</h1>
         </div>
-      </div>
-      <div class="sync">
-        <div class="dot" id="syncDot"></div>
-        <span id="syncStatus">Sincronizando...</span>
-      </div>
+        <nav class="nav-menu">
+            <div class="nav-item active" onclick="switchTab('dashboard', this)">
+                <i class="fas fa-chart-line"></i><span>Dashboard</span>
+            </div>
+            <div class="nav-item" onclick="switchTab('clientes', this)">
+                <i class="fas fa-users"></i><span>Clientes</span>
+            </div>
+            <div class="nav-item" onclick="switchTab('crm', this)">
+                <i class="fas fa-bullseye"></i><span>CRM Ativo</span>
+            </div>
+            <div class="nav-item" onclick="switchTab('financeiro', this)">
+                <i class="fas fa-wallet"></i><span>Financeiro</span>
+            </div>
+            <div class="nav-item" onclick="switchTab('config', this)">
+                <i class="fas fa-cog"></i><span>Configurações</span>
+            </div>
+        </nav>
+    </aside>
+
+    <main class="main-content">
+        <!-- DASHBOARD -->
+        <div id="dashboard" class="tab-content active">
+            <div class="header-title">
+                <h2>Resumo Executivo</h2>
+            </div>
+            
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <h3>Receita Mensal</h3>
+                    <div class="value" id="receitaMes">R$ 0,00</div>
+                </div>
+                <div class="stat-card">
+                    <h3>Ticket Médio</h3>
+                    <div class="value" id="ticketMedio">R$ 0,00</div>
+                </div>
+                <div class="stat-card">
+                    <h3>Visitas no Mês</h3>
+                    <div class="value" id="totalVisitas">0</div>
+                </div>
+                <div class="stat-card">
+                    <h3>Novos Clientes</h3>
+                    <div class="value" id="novosClientes">0</div>
+                </div>
+            </div>
+
+            <div class="grid-2">
+                <div class="card">
+                    <h2>📈 Desempenho Financeiro</h2>
+                    <div style="height: 300px;">
+                        <canvas id="financeChart"></canvas>
+                    </div>
+                </div>
+                <div class="card">
+                    <h2>👑 Top Clientes</h2>
+                    <ul class="item-list" id="vipListShort"></ul>
+                </div>
+            </div>
+        </div>
+
+        <!-- CLIENTES -->
+        <div id="clientes" class="tab-content" style="display:none">
+            <div class="header-title">
+                <h2>Gestão de Clientes</h2>
+                <button class="btn" onclick="openModal('clienteModal')">
+                    <i class="fas fa-plus"></i> Novo Cliente
+                </button>
+            </div>
+            <div class="card">
+                <ul class="item-list" id="clientesList"></ul>
+            </div>
+        </div>
+
+        <!-- CRM ATIVO -->
+        <div id="crm" class="tab-content" style="display:none">
+            <div class="header-title">
+                <h2>CRM Ativo - Lembretes</h2>
+                <div>
+                    <button class="btn btn-small btn-secondary" onclick="renderCRM('todos')">Todos</button>
+                    <button class="btn btn-small btn-danger" onclick="renderCRM('alta')">Alta</button>
+                    <button class="btn btn-small btn-secondary" onclick="renderCRM('media')">Média</button>
+                    <button class="btn btn-small btn-secondary" onclick="renderCRM('baixa')">Baixa</button>
+                </div>
+            </div>
+            <div id="alertasArea"></div>
+            <div class="card">
+                <h2>🔔 Clientes para contato</h2>
+                <ul class="item-list" id="clientesInativos"></ul>
+            </div>
+            <div class="card">
+                <h2>🎂 Aniversariantes (próximos 30 dias)</h2>
+                <ul class="item-list" id="crmAniversarios"></ul>
+            </div>
+            <div class="card">
+                <h2>📈 Clientes em crescimento (frequência)</h2>
+                <ul class="item-list" id="crmCrescentes"></ul>
+            </div>
+        </div>
+
+        <!-- FINANCEIRO -->
+        <div id="financeiro" class="tab-content" style="display:none">
+            <div class="header-title">
+                <h2>Financeiro Detalhado</h2>
+                <button class="btn" onclick="openModal('transacaoModal')">
+                    <i class="fas fa-plus"></i> Nova Transação
+                </button>
+            </div>
+
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <h3>Total Receitas</h3>
+                    <div class="value" id="totalReceitas">R$ 0,00</div>
+                </div>
+                <div class="stat-card">
+                    <h3>Total Despesas</h3>
+                    <div class="value" id="totalDespesas">R$ 0,00</div>
+                </div>
+                <div class="stat-card">
+                    <h3>Lucro Líquido</h3>
+                    <div class="value" id="lucroLiquido">R$ 0,00</div>
+                </div>
+            </div>
+
+            <div class="card">
+                <h2>💰 Últimas Transações</h2>
+                <ul class="item-list" id="transacoesList"></ul>
+            </div>
+        </div>
+
+        <!-- CONFIGURAÇÕES -->
+        <div id="config" class="tab-content" style="display:none">
+            <div class="header-title">
+                <h2>Configurações</h2>
+            </div>
+            <div class="card">
+                <h2>⚙️ Preferências do Sistema</h2>
+                <p style="color: var(--text-muted);">Em breve: dados da barbearia, integrações, backup, etc.</p>
+            </div>
+        </div>
+    </main>
+
+    <!-- MODAL CLIENTE -->
+    <div id="clienteModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Novo Cliente</h2>
+                <span class="close" onclick="closeModal('clienteModal')">&times;</span>
+            </div>
+            <form id="clienteForm">
+                <div class="form-group">
+                    <label>Nome Completo</label>
+                    <input type="text" id="clienteNome" placeholder="Ex: João Silva" required>
+                </div>
+                <div class="form-group">
+                    <label>WhatsApp</label>
+                    <input type="tel" id="clienteTelefone" placeholder="11999999999" pattern="\d{10,11}" required>
+                </div>
+                <div class="form-group">
+                    <label>Data de Nascimento</label>
+                    <input type="date" id="clienteNascimento">
+                </div>
+                <div class="form-group">
+                    <label>Observações (opcional)</label>
+                    <textarea id="clienteObs" rows="3" placeholder="Ex: Prefere corte degradê"></textarea>
+                </div>
+                <button type="submit" class="btn">Cadastrar Cliente</button>
+            </form>
+        </div>
     </div>
 
-    <div class="toolbar">
-      <div class="select">
-        <select id="storeSelect" onchange="updateDashboard()">
-          <option value="all">📍 Todas as Lojas</option>
-        </select>
-      </div>
+    <!-- MODAL TRANSAÇÃO -->
+    <div id="transacaoModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Nova Transação</h2>
+                <span class="close" onclick="closeModal('transacaoModal')">&times;</span>
+            </div>
+            <form id="transacaoForm">
+                <div class="form-group">
+                    <label>Tipo</label>
+                    <select id="transacaoTipo" required>
+                        <option value="receita">Receita</option>
+                        <option value="despesa">Despesa</option>
+                    </select>
+                </div>
+                <div class="form-group" id="clienteSelectGroup">
+                    <label>Cliente</label>
+                    <select id="transacaoCliente" required>
+                        <option value="">Selecione um cliente</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Descrição</label>
+                    <input type="text" id="transacaoDesc" placeholder="Ex: Corte + Barba" required>
+                </div>
+                <div class="grid-3">
+                    <div class="form-group">
+                        <label>Valor (R$)</label>
+                        <input type="number" id="transacaoValor" step="0.01" min="0" placeholder="50.00" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Data</label>
+                        <input type="date" id="transacaoData" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Pagamento</label>
+                        <select id="transacaoPagamento">
+                            <option value="dinheiro">Dinheiro</option>
+                            <option value="pix">PIX</option>
+                            <option value="cartao">Cartão</option>
+                        </select>
+                    </div>
+                </div>
+                <button type="submit" class="btn">Registrar Transação</button>
+            </form>
+        </div>
     </div>
 
-    <div class="metrics">
-      <div class="card">
-        <div class="metric-label">Vendas Totais</div>
-        <div class="metric-value" id="totalSales">R$ 0</div>
-        <div class="trend" id="salesTrend"></div>
-      </div>
-      <div class="card">
-        <div class="metric-label">Vendas Balcão</div>
-        <div class="metric-value" id="counterSales">R$ 0</div>
-      </div>
-      <div class="card">
-        <div class="metric-label">Delivery</div>
-        <div class="metric-value" id="deliverySales">R$ 0</div>
-        <div class="trend" id="deliveryTrend"></div>
-      </div>
-      <div class="card">
-        <div class="metric-label">% Delivery</div>
-        <div class="metric-value" id="deliveryPercent">0%</div>
-      </div>
-      <div class="card">
-        <div class="metric-label">Previsão Mês</div>
-        <div class="metric-value" id="forecast">R$ 0</div>
-      </div>
-      <div class="card">
-        <div class="metric-label">Meta do Mês</div>
-        <div class="metric-value" id="goalValue">R$ 0</div>
-        <div class="trend" id="goalStatus"></div>
-      </div>
+    <!-- MODAL PERFIL CLIENTE -->
+    <div id="perfilModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 id="perfilNome">Perfil do Cliente</h2>
+                <span class="close" onclick="closeModal('perfilModal')">&times;</span>
+            </div>
+            <div id="perfilConteudo"></div>
+        </div>
     </div>
 
-    <div class="grid-2-1">
-      <div class="card">
-        <div class="card-title">📈 Evolução de Vendas</div>
-        <div class="canvas-wrap"><canvas id="salesChart"></canvas></div>
-      </div>
-      <div class="card">
-        <div class="card-title">🎯 Progresso da Meta</div>
-        <div class="gauge-wrap"><canvas id="gaugeChart"></canvas></div>
-      </div>
-    </div>
+    <script>
+        // Firebase
+        const firebaseConfig = {
+            apiKey: "AIzaSyByRlYBbZN3ZqQuUuRW_szdi7iczyVxyx8",
+            authDomain: "jeff-51ee7.firebaseapp.com",
+            projectId: "jeff-51ee7",
+            storageBucket: "jeff-51ee7.firebasestorage.app",
+            messagingSenderId: "505894646506",
+            appId: "1:505894646506:web:48c49e86656115350ddd93"
+        };
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.firestore();
 
-    <div class="tops">
-      <div class="card">
-        <div class="card-title">🏆 Top 3 Melhores Lojas</div>
-        <div id="topStores"></div>
-      </div>
-      <div class="card">
-        <div class="card-title">⚠️ Top 3 Lojas em Alerta</div>
-        <div id="bottomStores"></div>
-      </div>
-    </div>
+        let transacoes = [];
+        let clientes = [];
+        let financeChart = null;
 
-    <div class="grid-2">
-      <div class="card">
-        <div class="card-title">🚚 Evolução do Delivery</div>
-        <div class="canvas-wrap sm"><canvas id="deliveryChart"></canvas></div>
-      </div>
-      <div class="card">
-        <div class="card-title">🏪 Vendas por Loja</div>
-        <div class="canvas-wrap"><canvas id="storesChart"></canvas></div>
-      </div>
-    </div>
-
-    <div class="card table-card">
-      <div class="card-title">📋 Resumo Detalhado por Loja</div>
-      <table id="storesTable">
-        <thead>
-          <tr>
-            <th>Loja</th>
-            <th>Vendas Balcão</th>
-            <th>Delivery</th>
-            <th>Total</th>
-            <th>% Delivery</th>
-            <th>Previsão Mês</th>
-            <th>Meta</th>
-            <th>Status Meta</th>
-            <th>Tendência</th>
-          </tr>
-        </thead>
-        <tbody></tbody>
-      </table>
-    </div>
-  </div>
-
-  <script>
-    // CONFIG
-    const USE_APPS_SCRIPT = true;
-    const SHEET_API_URL = 'https://script.google.com/macros/s/AKfycbzA5tqE0f7KpJ3ldeQ7ancb5itCQlUWHUbF1n9Jrjq5mdogGuiMC_kvhELnfFXSwdlJ/exec';
-    const REFRESH_INTERVAL = 10000;
-
-    let salesData = [];
-    let salesChart, storesChart, deliveryChart, gaugeChart;
-
-    function setSync(msg, isError=false){
-      document.getElementById('syncStatus').textContent = msg;
-      document.getElementById('syncDot').style.background = isError ? 'var(--down)' : 'var(--ok)';
-      document.title = 'Dashboard • ' + msg;
-    }
-
-    function jsonp(url) {
-      return new Promise((resolve, reject) => {
-        const cb = 'cb_' + Math.random().toString(36).slice(2);
-        const s = document.createElement('script');
-        s.src = url + (url.includes('?') ? '&' : '?') + 'callback=' + cb + '&t=' + Date.now();
-        window[cb] = (data) => { resolve(data); cleanup(); };
-        s.onerror = (e) => { reject(e); cleanup(); };
-        function cleanup(){ try{ document.body.removeChild(s); }catch{} delete window[cb]; }
-        document.body.appendChild(s);
-      });
-    }
-
-    async function loadDataFromSource() {
-      try{
-        setSync('Sincronizando...');
-        let dataRows;
-        if (USE_APPS_SCRIPT) {
-          dataRows = await jsonp(SHEET_API_URL);
-        } else {
-          throw new Error('Configure USE_APPS_SCRIPT = true');
+        // Navegação
+        function switchTab(tabName, element) {
+            document.querySelectorAll('.tab-content').forEach(t => t.style.display = 'none');
+            document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
+            document.getElementById(tabName).style.display = 'block';
+            element.classList.add('active');
+            
+            if(tabName === 'dashboard') updateDashboard();
+            if(tabName === 'crm') renderCRM('todos');
+            if(tabName === 'financeiro') renderFinanceiro();
         }
 
-        if (!Array.isArray(dataRows) || dataRows.length === 0) throw new Error('Sem dados');
-
-        salesData = dataRows.map(row => ({
-          date: parseDate(row.date),
-          store: String(row.store || '').trim(),
-          counter: num(row.counter),
-          delivery: num(row.delivery),
-          goal: num(row.goal)
-        })).filter(r => r.store);
-
-        salesData.sort((a,b)=> a.date - b.date);
-
-        populateStoreSelector();
-        updateDashboard();
-        setSync('Atualizado agora');
-      }catch(e){
-        console.error(e);
-        setSync('Erro na sincronização', true);
-      }
-    }
-
-    function num(v){ const n = parseFloat(String(v).toString().replace(/\./g,'').replace(',','.')); return isNaN(n)?0:n; }
-    function parseDate(s){
-      if (!s) return new Date();
-      const p = String(s).trim().split('/');
-      if (p.length===3){
-        const d = new Date(+p[2], +p[1]-1, +p[0]);
-        if (!isNaN(d)) return d;
-      }
-      const d = new Date(s);
-      return isNaN(d) ? new Date() : d;
-    }
-    function money(v){ return 'R$ ' + Number(v).toLocaleString('pt-BR',{minimumFractionDigits:2, maximumFractionDigits:2}); }
-
-    function populateStoreSelector(){
-      const stores = [...new Set(salesData.map(d=>d.store))];
-      const sel = document.getElementById('storeSelect');
-      const cur = sel.value;
-      sel.innerHTML = '<option value="all">📍 Todas as Lojas</option>' +
-        stores.map(s=>`<option value="${s}">🏪 ${s}</option>`).join('');
-      if (stores.includes(cur)) sel.value = cur;
-    }
-
-    function updateDashboard(){
-      const selected = document.getElementById('storeSelect').value;
-      const data = selected==='all' ? salesData : salesData.filter(d=>d.store===selected);
-      updateMetrics(data, selected);
-      updateSalesChart(data);
-      updateDeliveryChart(data);
-      if (selected==='all') updateStoresChart();
-      updateTable();
-      updateTopStores();
-    }
-
-    function updateMetrics(data, selectedStore){
-      const totalCounter = data.reduce((s,d)=>s+d.counter,0);
-      const totalDelivery = data.reduce((s,d)=>s+d.delivery,0);
-      const totalSales = totalCounter + totalDelivery;
-
-      const dates = data.map(d=>d.date);
-      const minDate = new Date(Math.min(...dates));
-      const maxDate = new Date(Math.max(...dates));
-      const daysInData = Math.max(1, Math.ceil((maxDate - minDate)/(1000*60*60*24))+1);
-      const avgDaily = totalSales / daysInData;
-      const daysInMonth = new Date(maxDate.getFullYear(), maxDate.getMonth()+1, 0).getDate();
-      const forecast = avgDaily * daysInMonth;
-
-      const goal = selectedStore==='all'
-        ? [...new Set(salesData.map(d=>d.store))].reduce((sum, store)=>{
-            const g = salesData.find(d=>d.store===store && d.goal>0)?.goal || 0;
-            return sum + g;
-          },0)
-        : (data.find(d=>d.goal>0)?.goal || 0);
-
-      const deliveryPercent = totalSales>0 ? (totalDelivery/totalSales*100) : 0;
-      const salesTrend = calcTrend(data.map(d=>({sales:d.counter+d.delivery})));
-      const deliveryTrend = calcTrend(data.map(d=>({sales:d.delivery})));
-
-      document.getElementById('totalSales').textContent = money(totalSales);
-      document.getElementById('counterSales').textContent = money(totalCounter);
-      document.getElementById('deliverySales').textContent = money(totalDelivery);
-      document.getElementById('deliveryPercent').textContent = deliveryPercent.toFixed(1)+'%';
-      document.getElementById('forecast').textContent = money(forecast);
-      document.getElementById('goalValue').textContent = money(goal);
-
-      document.getElementById('salesTrend').innerHTML = salesTrend>=0
-        ? `<span class="up">▲ ${salesTrend.toFixed(1)}%</span>` : `<span class="down">▼ ${Math.abs(salesTrend).toFixed(1)}%</span>`;
-      document.getElementById('deliveryTrend').innerHTML = deliveryTrend>=0
-        ? `<span class="up">▲ ${deliveryTrend.toFixed(1)}%</span>` : `<span class="down">▼ ${Math.abs(deliveryTrend).toFixed(1)}%</span>`;
-
-      document.getElementById('goalStatus').innerHTML = forecast>=goal
-        ? `<span class="up">✓ No caminho</span>` : `<span class="down">✗ Abaixo</span>`;
-
-      updateGaugeChart(forecast, goal);
-    }
-
-    function calcTrend(arr){
-      if (arr.length<2) return 0;
-      const m = Math.floor(arr.length/2);
-      const f = arr.slice(0,m).reduce((s,d)=>s+d.sales,0)/Math.max(1,m);
-      const s = arr.slice(m).reduce((s2,d)=>s2+d.sales,0)/Math.max(1,arr.length-m);
-      if (f===0) return 0;
-      return ((s-f)/f)*100;
-    }
-
-    // Charts minimalistas
-    function updateSalesChart(data){
-      const daily = {};
-      data.forEach(d=>{
-        const k = d.date.toLocaleDateString('pt-BR');
-        if (!daily[k]) daily[k] = {counter:0, delivery:0};
-        daily[k].counter += d.counter;
-        daily[k].delivery += d.delivery;
-      });
-      const labels = Object.keys(daily);
-      const counterValues = labels.map(k=>daily[k].counter);
-      const deliveryValues = labels.map(k=>daily[k].delivery);
-
-      if (salesChart) salesChart.destroy();
-      const ctx = document.getElementById('salesChart').getContext('2d');
-      salesChart = new Chart(ctx,{
-        type:'line',
-        data:{ labels, datasets:[
-          { data:counterValues, borderColor:'var(--brand)', tension:.35, borderWidth:2, pointRadius:0 },
-          { data:deliveryValues, borderColor:'var(--ok)', tension:.35, borderWidth:2, pointRadius:0 }
-        ]},
-        options:{
-          responsive:true, maintainAspectRatio:false,
-          plugins:{ legend:{display:false}, title:{display:false}, tooltip:{mode:'index',intersect:false} },
-          elements:{ point:{radius:0} },
-          scales:{
-            x:{ grid:{display:false}, ticks:{ maxTicksLimit:6 }},
-            y:{ grid:{display:false}, beginAtZero:true, ticks:{ maxTicksLimit:4, callback:v=>'R$ '+Number(v).toLocaleString('pt-BR') } }
-          }
+        // Modais
+        function openModal(id) {
+            document.getElementById(id).style.display = 'block';
+            if(id === 'transacaoModal') populateClienteSelect();
         }
-      });
-    }
 
-    function updateDeliveryChart(data){
-      const daily = {};
-      data.forEach(d=>{
-        const k = d.date.toLocaleDateString('pt-BR');
-        daily[k] = (daily[k]||0) + d.delivery;
-      });
-      const labels = Object.keys(daily);
-      const values = labels.map(k=>daily[k]);
-
-      if (deliveryChart) deliveryChart.destroy();
-      const ctx = document.getElementById('deliveryChart').getContext('2d');
-      deliveryChart = new Chart(ctx,{
-        type:'bar',
-        data:{ labels, datasets:[{ data:values, backgroundColor:'var(--ok)', borderWidth:0, barPercentage:.6, categoryPercentage:.8 }] },
-        options:{
-          responsive:true, maintainAspectRatio:false,
-          plugins:{ legend:{display:false}, title:{display:false} },
-          scales:{
-            x:{ grid:{display:false}, ticks:{maxTicksLimit:6}},
-            y:{ grid:{display:false}, beginAtZero:true,
-                ticks:{ maxTicksLimit:4, callback:v=>'R$ '+Number(v).toLocaleString('pt-BR') } }
-          }
+        function closeModal(id) {
+            document.getElementById(id).style.display = 'none';
         }
-      });
-    }
 
-    function updateStoresChart(){
-      const stores = {};
-      salesData.forEach(d=>{
-        if (!stores[d.store]) stores[d.store] = {counter:0, delivery:0};
-        stores[d.store].counter += d.counter;
-        stores[d.store].delivery += d.delivery;
-      });
-      const labels = Object.keys(stores);
-      const counterValues = labels.map(s=>stores[s].counter);
-      const deliveryValues = labels.map(s=>stores[s].delivery);
-
-      if (storesChart) storesChart.destroy();
-      const ctx = document.getElementById('storesChart').getContext('2d');
-      storesChart = new Chart(ctx,{
-        type:'bar',
-        data:{
-          labels,
-          datasets:[
-            {label:'Balcão', data:counterValues, backgroundColor:'var(--brand)'},
-            {label:'Delivery', data:deliveryValues, backgroundColor:'var(--ok)'}
-          ]
-        },
-        options:{
-          responsive:true, maintainAspectRatio:false,
-          plugins:{ legend:{display:true, position:'top'} },
-          scales:{
-            x:{ stacked:true },
-            y:{ stacked:true, beginAtZero:true,
-                ticks:{ callback:v=>'R$ '+Number(v).toLocaleString('pt-BR') } }
-          }
+        window.onclick = function(event) {
+            if (event.target.classList.contains('modal')) {
+                event.target.style.display = 'none';
+            }
         }
-      });
-    }
 
-    function updateGaugeChart(forecast, goal){
-      const pct = goal>0 ? Math.min((forecast/goal)*100, 100) : 0;
-      if (gaugeChart) gaugeChart.destroy();
-      const ctx = document.getElementById('gaugeChart').getContext('2d');
-      gaugeChart = new Chart(ctx,{
-        type:'doughnut',
-        data:{ datasets:[{ data:[pct, 100-pct],
-          backgroundColor:[ pct>=100?'var(--ok)' : pct>=80 ? 'var(--brand)' : 'var(--down)', '#e5e7eb' ],
-          borderWidth:0 }] },
-        options:{
-          responsive:true, maintainAspectRatio:false,
-          circumference:180, rotation:270, cutout:'78%',
-          plugins:{ legend:{display:false}, tooltip:{enabled:false} }
-        },
-        plugins:[{
-          id:'gaugeText',
-          afterDraw:(chart)=>{
-            const c = chart.ctx, a = chart.chartArea;
-            const cx = a.left + (a.right-a.left)/2;
-            const cy = a.top + (a.bottom-a.top)/2 + 10;
-            c.save();
-            c.font = '900 22px Inter, Arial';
-            c.fillStyle = 'var(--ink)';
-            c.textAlign='center'; c.textBaseline='middle';
-            c.fillText(pct.toFixed(1)+'%', cx, cy);
-            c.font = '600 12px Inter, Arial'; c.fillStyle='var(--muted)';
-            c.fillText('da meta', cx, cy+18);
-            c.restore();
-          }
-        }]
-      });
-    }
+        // Utils gerais
+        function mesmaCompetencia(dateA, dateB) {
+            return dateA.getMonth() === dateB.getMonth() &&
+                   dateA.getFullYear() === dateB.getFullYear();
+        }
 
-    function updateTopStores(){
-      const stores = [...new Set(salesData.map(d=>d.store))];
-      const stats = stores.map(store=>{
-        const sd = salesData.filter(d=>d.store===store);
-        const total = sd.reduce((s,d)=>s+d.counter+d.delivery,0);
-        const dates = sd.map(d=>d.date);
-        const minD = new Date(Math.min(...dates)); const maxD = new Date(Math.max(...dates));
-        const days = Math.max(1, Math.ceil((maxD-minD)/(1000*60*60*24))+1);
-        const avg = total/days; const dim = new Date(maxD.getFullYear(), maxD.getMonth()+1, 0).getDate();
-        const forecast = avg*dim;
-        return {store,total,forecast};
-      }).sort((a,b)=>b.total-a.total);
+        function diasEntre(a, b) {
+            const diff = b - a;
+            return Math.floor(diff / (1000 * 60 * 60 * 24));
+        }
 
-      document.getElementById('topStores').innerHTML = stats.slice(0,3).map((s,i)=>`
-        <div class="top-item">
-          <div class="top-rank">${['🥇','🥈','🥉'][i]}</div>
-          <div class="top-name">${s.store}</div>
-          <div class="top-val">${money(s.total)}</div>
-        </div>`).join('');
+        function formatMoney(value) {
+            return `R$ ${Number(value).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+        }
 
-      document.getElementById('bottomStores').innerHTML = stats.slice(-3).reverse().map((s,i)=>`
-        <div class="top-item">
-          <div class="top-rank">${i+1}</div>
-          <div class="top-name">${s.store}</div>
-          <div class="top-val">${money(s.total)}</div>
-        </div>`).join('');
-    }
+        function calcularIdade(dataNascimentoStr) {
+            if (!dataNascimentoStr) return null;
+            const [ano, mes, dia] = dataNascimentoStr.split('-').map(Number);
+            const hoje = new Date();
+            let idade = hoje.getFullYear() - ano;
+            const m = hoje.getMonth() - (mes - 1);
+            if (m < 0 || (m === 0 && hoje.getDate() < dia)) idade--;
+            return idade;
+        }
 
-    function updateTable(){
-      const stores = [...new Set(salesData.map(d=>d.store))];
-      const tbody = document.querySelector('#storesTable tbody');
-      tbody.innerHTML = '';
-      stores.forEach(store=>{
-        const sd = salesData.filter(d=>d.store===store);
-        const totalCounter = sd.reduce((s,d)=>s+d.counter,0);
-        const totalDelivery = sd.reduce((s,d)=>s+d.delivery,0);
-        const total = totalCounter+totalDelivery;
+        // Visitas por cliente
+        function getVisitasCliente(clienteId) {
+            return transacoes
+                .filter(t => t.clienteId === clienteId && t.tipo === 'receita')
+                .sort((a, b) => new Date(a.data) - new Date(b.data));
+        }
 
-        const dates = sd.map(d=>d.date);
-        const minD = new Date(Math.min(...dates)); const maxD = new Date(Math.max(...dates));
-        const days = Math.max(1, Math.ceil((maxD-minD)/(1000*60*60*24))+1);
-        const avg = total/days; const dim = new Date(maxD.getFullYear(), maxD.getMonth()+1, 0).getDate();
-        const forecast = avg*dim;
-        const goal = sd.find(d=>d.goal>0)?.goal || 0;
-        const delPct = total>0 ? (totalDelivery/total*100) : 0;
-        const trend = calcTrend(sd.map(d=>({sales:d.counter+d.delivery})));
-        const trendIcon = trend>=0 ? '📈' : '📉';
-        const trendClass = trend>=0 ? 'up' : 'down';
-        const goalBadge = forecast>=goal ? '<span class="up">✓ Atingirá</span>' : '<span class="down">✗ Abaixo</span>';
+        function getIntervaloMedioDias(visitas) {
+            if (visitas.length < 2) return null;
+            let soma = 0;
+            for (let i = 1; i < visitas.length; i++) {
+                soma += diasEntre(new Date(visitas[i - 1].data), new Date(visitas[i].data));
+            }
+            return soma / (visitas.length - 1);
+        }
 
-        tbody.insertAdjacentHTML('beforeend', `
-          <tr>
-            <td><strong>${store}</strong></td>
-            <td>${money(totalCounter)}</td>
-            <td>${money(totalDelivery)}</td>
-            <td><strong>${money(total)}</strong></td>
-            <td>${delPct.toFixed(1)}%</td>
-            <td>${money(forecast)}</td>
-            <td>${money(goal)}</td>
-            <td>${goalBadge}</td>
-            <td class="${trendClass}">${trendIcon} ${trend.toFixed(1)}%</td>
-          </tr>
-        `);
-      });
-    }
+        // Início
+        function init() {
+            db.collection('clientes').onSnapshot(snap => {
+                clientes = snap.docs.map(doc => ({id: doc.id, ...doc.data()}));
+                renderClientes();
+                updateDashboard();
+            });
 
-    // Inicialização
-    loadDataFromSource();
-    setInterval(loadDataFromSource, REFRESH_INTERVAL);
-  </script>
+            db.collection('transacoes').onSnapshot(snap => {
+                transacoes = snap.docs.map(doc => ({id: doc.id, ...doc.data()}));
+                updateDashboard();
+                renderTopClientes();
+                renderFinanceiro();
+            });
+
+            document.getElementById('transacaoData').valueAsDate = new Date();
+        }
+
+        // Dashboard
+        function updateDashboard() {
+            const agora = new Date();
+            const esteMes = transacoes.filter(t => {
+                const dt = new Date(t.data);
+                return t.tipo === 'receita' && mesmaCompetencia(dt, agora);
+            });
+
+            const total = esteMes.reduce((acc, t) => acc + Number(t.valor || 0), 0);
+            const media = esteMes.length > 0 ? total / esteMes.length : 0;
+
+            const novos = clientes.filter(c => {
+                const dt = new Date(c.dataCadastro);
+                return mesmaCompetencia(dt, agora);
+            }).length;
+
+            document.getElementById('receitaMes').textContent = formatMoney(total);
+            document.getElementById('ticketMedio').textContent = formatMoney(media);
+            document.getElementById('totalVisitas').textContent = esteMes.length;
+            document.getElementById('novosClientes').textContent = novos;
+
+            renderChart(esteMes);
+        }
+
+        function renderChart(esteMes) {
+            const ctx = document.getElementById('financeChart').getContext('2d');
+            if (financeChart) financeChart.destroy();
+
+            const valoresPorSemana = [0, 0, 0, 0];
+            esteMes.forEach(t => {
+                const d = new Date(t.data);
+                const dia = d.getDate();
+                const indiceSemana = dia <= 7 ? 0 : dia <= 14 ? 1 : dia <= 21 ? 2 : 3;
+                valoresPorSemana[indiceSemana] += Number(t.valor || 0);
+            });
+
+            financeChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: ['Sem 1', 'Sem 2', 'Sem 3', 'Sem 4'],
+                    datasets: [{
+                        label: 'Faturamento',
+                        data: valoresPorSemana,
+                        borderColor: '#c5a059',
+                        tension: 0.4,
+                        fill: true,
+                        backgroundColor: 'rgba(197, 160, 89, 0.1)'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        y: { grid: { color: '#2c3138' }, ticks: { color: '#a0a0a0' } },
+                        x: { grid: { display: false }, ticks: { color: '#a0a0a0' } }
+                    }
+                }
+            });
+        }
+
+        function renderTopClientes() {
+            const agora = new Date();
+            const receitasMes = transacoes.filter(t => {
+                if (t.tipo !== 'receita') return false;
+                const dt = new Date(t.data);
+                return mesmaCompetencia(dt, agora);
+            });
+
+            const mapa = {};
+            receitasMes.forEach(t => {
+                if (!t.clienteId) return;
+                if (!mapa[t.clienteId]) {
+                    mapa[t.clienteId] = { total: 0, visitas: 0 };
+                }
+                mapa[t.clienteId].total += Number(t.valor || 0);
+                mapa[t.clienteId].visitas += 1;
+            });
+
+            const ranking = Object.entries(mapa)
+                .map(([clienteId, info]) => {
+                    const cliente = clientes.find(c => c.id === clienteId);
+                    return {
+                        id: clienteId,
+                        nome: cliente?.nome || 'Cliente sem nome',
+                        total: info.total,
+                        visitas: info.visitas
+                    };
+                })
+                .sort((a, b) => b.total - a.total)
+                .slice(0, 3);
+
+            const list = document.getElementById('vipListShort');
+
+            if (ranking.length === 0) {
+                list.innerHTML = `<li class="list-item">
+                    <div><strong>Nenhum dado ainda</strong><br><small>Cadastre transações para ver o ranking</small></div>
+                </li>`;
+                return;
+            }
+
+            list.innerHTML = ranking.map((c, i) => `
+                <li class="list-item">
+                    <div>
+                        <strong>${c.nome}</strong><br>
+                        <small>${c.visitas} visita(s) · ${formatMoney(c.total)}</small>
+                    </div>
+                    <span class="badge badge-gold">TOP ${i + 1}</span>
+                </li>
+            `).join('');
+        }
+
+        // Clientes
+        function renderClientes() {
+            const list = document.getElementById('clientesList');
+            if (clientes.length === 0) {
+                list.innerHTML = `<li class="list-item">
+                    <div><strong>Nenhum cliente cadastrado</strong><br><small>Clique em "Novo Cliente" para começar</small></div>
+                </li>`;
+                return;
+            }
+
+            list.innerHTML = clientes.map(c => `
+                <li class="list-item">
+                    <div>
+                        <strong>${c.nome}</strong><br>
+                        <small><i class="fab fa-whatsapp"></i> ${c.telefone}</small>
+                    </div>
+                    <div class="list-item-actions">
+                        <button class="btn btn-small" onclick="verPerfil('${c.id}')">Ver Perfil</button>
+                        <button class="btn btn-danger btn-small" onclick="deletarCliente('${c.id}')">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </div>
+                </li>
+            `).join('');
+        }
+
+        document.getElementById('clienteForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const novo = {
+                nome: document.getElementById('clienteNome').value,
+                telefone: document.getElementById('clienteTelefone').value,
+                dataNascimento: document.getElementById('clienteNascimento').value || null,
+                observacoes: document.getElementById('clienteObs').value,
+                dataCadastro: new Date().toISOString(),
+                ultimoContatoCRM: null,
+                motivoUltimoContato: null
+            };
+            await db.collection('clientes').add(novo);
+            e.target.reset();
+            closeModal('clienteModal');
+        });
+
+        async function deletarCliente(id) {
+            if (!confirm('Tem certeza que deseja excluir este cliente?')) return;
+            await db.collection('clientes').doc(id).delete();
+        }
+
+        function verPerfil(clienteId) {
+            const cliente = clientes.find(c => c.id === clienteId);
+            if (!cliente) return;
+
+            const visitasCliente = getVisitasCliente(clienteId);
+            const totalGasto = visitasCliente.reduce((acc, t) => acc + Number(t.valor || 0), 0);
+            const ticketMedio = visitasCliente.length > 0 ? totalGasto / visitasCliente.length : 0;
+            
+            const ultimaVisita = visitasCliente.length > 0 
+                ? new Date(Math.max(...visitasCliente.map(v => new Date(v.data)))).toLocaleDateString('pt-BR')
+                : 'Nunca';
+
+            const idade = calcularIdade(cliente.dataNascimento);
+
+            document.getElementById('perfilNome').textContent = cliente.nome;
+            document.getElementById('perfilConteudo').innerHTML = `
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <h3>Total Gasto</h3>
+                        <div class="value">${formatMoney(totalGasto)}</div>
+                    </div>
+                    <div class="stat-card">
+                        <h3>Ticket Médio</h3>
+                        <div class="value">${formatMoney(ticketMedio)}</div>
+                    </div>
+                    <div class="stat-card">
+                        <h3>Total Visitas</h3>
+                        <div class="value">${visitasCliente.length}</div>
+                    </div>
+                    <div class="stat-card">
+                        <h3>Última Visita</h3>
+                        <div class="value" style="font-size: 16px">${ultimaVisita}</div>
+                    </div>
+                </div>
+
+                <div class="card" style="margin-top: 20px">
+                    <h2>📋 Informações</h2>
+                    <p><strong>WhatsApp:</strong> ${cliente.telefone}</p>
+                    <p><strong>Cadastro:</strong> ${new Date(cliente.dataCadastro).toLocaleDateString('pt-BR')}</p>
+                    ${cliente.dataNascimento ? `<p><strong>Nascimento:</strong> ${new Date(cliente.dataNascimento).toLocaleDateString('pt-BR')}${idade !== null ? ` (${idade} anos)` : ''}</p>` : ''}
+                    ${cliente.observacoes ? `<p><strong>Obs:</strong> ${cliente.observacoes}</p>` : ''}
+                </div>
+
+                <div class="card" style="margin-top: 20px">
+                    <h2>🕒 Histórico de Visitas</h2>
+                    <ul class="item-list">
+                        ${visitasCliente.length === 0 ? '<li class="list-item"><div>Nenhuma visita registrada</div></li>' : 
+                        visitasCliente.sort((a, b) => new Date(b.data) - new Date(a.data)).map(v => `
+                            <li class="list-item">
+                                <div>
+                                    <strong>${v.descricao}</strong><br>
+                                    <small>${new Date(v.data).toLocaleDateString('pt-BR')} · ${v.pagamento}</small>
+                                </div>
+                                <span class="badge badge-success">${formatMoney(v.valor)}</span>
+                            </li>
+                        `).join('')}
+                    </ul>
+                </div>
+            `;
+
+            openModal('perfilModal');
+        }
+
+        // Transações
+        function populateClienteSelect() {
+            const select = document.getElementById('transacaoCliente');
+            select.innerHTML = '<option value="">Selecione um cliente</option>' +
+                clientes.map(c => `<option value="${c.id}">${c.nome}</option>`).join('');
+        }
+
+        document.getElementById('transacaoTipo').addEventListener('change', (e) => {
+            const clienteGroup = document.getElementById('clienteSelectGroup');
+            if (e.target.value === 'receita') {
+                clienteGroup.style.display = 'block';
+                document.getElementById('transacaoCliente').required = true;
+            } else {
+                clienteGroup.style.display = 'none';
+                document.getElementById('transacaoCliente').required = false;
+            }
+        });
+
+        document.getElementById('transacaoForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const tipo = document.getElementById('transacaoTipo').value;
+            const nova = {
+                tipo: tipo,
+                clienteId: tipo === 'receita' ? document.getElementById('transacaoCliente').value : null,
+                descricao: document.getElementById('transacaoDesc').value,
+                valor: parseFloat(document.getElementById('transacaoValor').value),
+                data: document.getElementById('transacaoData').value,
+                pagamento: document.getElementById('transacaoPagamento').value,
+                timestamp: new Date().toISOString()
+            };
+            await db.collection('transacoes').add(nova);
+            e.target.reset();
+            document.getElementById('transacaoData').valueAsDate = new Date();
+            closeModal('transacaoModal');
+        });
+
+        function renderFinanceiro() {
+            const agora = new Date();
+            const esteMes = transacoes.filter(t => {
+                const dt = new Date(t.data);
+                return mesmaCompetencia(dt, agora);
+            });
+
+            const receitas = esteMes.filter(t => t.tipo === 'receita').reduce((acc, t) => acc + Number(t.valor || 0), 0);
+            const despesas = esteMes.filter(t => t.tipo === 'despesa').reduce((acc, t) => acc + Number(t.valor || 0), 0);
+            const lucro = receitas - despesas;
+
+            document.getElementById('totalReceitas').textContent = formatMoney(receitas);
+            document.getElementById('totalDespesas').textContent = formatMoney(despesas);
+            document.getElementById('lucroLiquido').textContent = formatMoney(lucro);
+
+            const list = document.getElementById('transacoesList');
+            const ultimas = [...transacoes].sort((a, b) => new Date(b.data) - new Date(a.data)).slice(0, 20);
+
+            if (ultimas.length === 0) {
+                list.innerHTML = `<li class="list-item">
+                    <div><strong>Nenhuma transação registrada</strong><br><small>Clique em "Nova Transação" para começar</small></div>
+                </li>`;
+                return;
+            }
+
+            list.innerHTML = ultimas.map(t => {
+                const cliente = t.clienteId ? clientes.find(c => c.id === t.clienteId) : null;
+                return `
+                    <li class="list-item">
+                        <div>
+                            <strong>${t.descricao}</strong><br>
+                            <small>
+                                ${new Date(t.data).toLocaleDateString('pt-BR')} · 
+                                ${cliente ? cliente.nome : 'Sem cliente'} · 
+                                ${t.pagamento}
+                            </small>
+                        </div>
+                        <span class="badge ${t.tipo === 'receita' ? 'badge-success' : 'badge-danger'}">
+                            ${t.tipo === 'receita' ? '+' : '-'} ${formatMoney(t.valor)}
+                        </span>
+                    </li>
+                `;
+            }).join('');
+        }
+
+        // CRM Ativo - mensagens
+        function gerarMensagemCRM(nome, diasSemVir, motivo) {
+            if (motivo === 'retencao') {
+                return `Olá ${nome}, tudo bem? 😊 Aqui é da Jeff Barber. Notamos que já faz ${diasSemVir} dias desde o seu último corte com a gente e você costuma vir com mais frequência. Quer agendar um horário pra dar aquele talento no visual?`;
+            }
+            if (motivo === 'inativo') {
+                return `Olá ${nome}, aqui é da Jeff Barber! 👋 Faz ${diasSemVir} dias que você não aparece por aqui. Estamos com horários disponíveis essa semana, quer reservar um pra cuidar do visual?`;
+            }
+            // manutenção
+            return `Fala ${nome}, tranquilo? ✂️ Aqui é da Jeff Barber. Já faz ${diasSemVir} dias desde o seu último corte, se quiser já posso deixar um horário reservado pra você essa semana.`;
+        }
+
+        function linkWhatsApp(telefone, mensagem) {
+            const tel = telefone.replace(/\D/g, '');
+            return `https://wa.me/55${tel}?text=${encodeURIComponent(mensagem)}`;
+        }
+
+        async function marcarContatoCRM(clienteId, motivo) {
+            await db.collection('clientes').doc(clienteId).update({
+                ultimoContatoCRM: new Date().toISOString(),
+                motivoUltimoContato: motivo
+            });
+            alert('Contato marcado com sucesso!');
+            renderCRM('todos');
+        }
+
+        // CRM Ativo - principal
+        function renderCRM(filtro = 'todos') {
+            const agora = new Date();
+            const diasInativoBase = 30;
+
+            const oportunidades = [];
+
+            clientes.forEach(c => {
+                const visitas = getVisitasCliente(c.id);
+                if (visitas.length === 0) return;
+
+                const ultima = visitas[visitas.length - 1];
+                const dtUltima = new Date(ultima.data);
+                const diasSemVir = diasEntre(dtUltima, agora);
+
+                const intervaloMedio = getIntervaloMedioDias(visitas);
+                let riscoChurn = false;
+                if (intervaloMedio && diasSemVir > intervaloMedio * 1.5) {
+                    riscoChurn = true;
+                }
+
+                let prioridade = 'baixa';
+                if (diasSemVir >= 18 && diasSemVir <= 25) prioridade = 'alta';
+                else if (diasSemVir > 25 && diasSemVir <= 40) prioridade = 'media';
+                else if (diasSemVir > 40) prioridade = 'baixa';
+
+                const ultimoContato = c.ultimoContatoCRM ? new Date(c.ultimoContatoCRM) : null;
+                const diasDesdeContato = ultimoContato ? diasEntre(ultimoContato, agora) : null;
+                const contatadoRecentemente = diasDesdeContato !== null && diasDesdeContato < 7;
+                if (contatadoRecentemente) return;
+
+                const motivo = riscoChurn ? 'retencao' :
+                               diasSemVir >= diasInativoBase ? 'inativo' : 'manutencao';
+
+                const msg = gerarMensagemCRM(c.nome, diasSemVir, motivo);
+
+                let textoPrioridade = '';
+                if (prioridade === 'alta') {
+                    textoPrioridade = `Prioridade ALTA: está há ${diasSemVir} dias sem vir e normalmente retorna a cada ${intervaloMedio ? intervaloMedio.toFixed(1) : '?'} dias. Risco maior de perda se não for contatado.`;
+                } else if (prioridade === 'media') {
+                    textoPrioridade = `Prioridade MÉDIA: ${diasSemVir} dias sem visita, já passando um pouco da média de retorno. Bom momento para lembrar da barbearia.`;
+                } else {
+                    textoPrioridade = `Prioridade BAIXA: ${diasSemVir} dias sem vir, mas padrão de retorno ainda não está muito diferente do normal.`;
+                }
+
+                oportunidades.push({
+                    cliente: c,
+                    visitas,
+                    ultima,
+                    diasSemVir,
+                    intervaloMedio,
+                    riscoChurn,
+                    prioridade,
+                    motivo,
+                    mensagem: msg,
+                    textoPrioridade
+                });
+            });
+
+            const filtradas = oportunidades.filter(o => {
+                if (filtro === 'alta') return o.prioridade === 'alta';
+                if (filtro === 'media') return o.prioridade === 'media';
+                if (filtro === 'baixa') return o.prioridade === 'baixa';
+                return true;
+            });
+
+            filtradas.sort((a, b) => {
+                if (a.riscoChurn && !b.riscoChurn) return -1;
+                if (!a.riscoChurn && b.riscoChurn) return 1;
+                return b.diasSemVir - a.diasSemVir;
+            });
+
+            const alertasArea = document.getElementById('alertasArea');
+            const qtdAlta = oportunidades.filter(o => o.prioridade === 'alta').length;
+            if (qtdAlta > 0) {
+                alertasArea.innerHTML = `
+                    <div class="alert alert-warning">
+                        <strong>⚡ Clientes quentes:</strong> Você tem ${qtdAlta} cliente(s) com prioridade ALTA de contato hoje.
+                    </div>
+                `;
+            } else {
+                alertasArea.innerHTML = '';
+            }
+
+            const list = document.getElementById('clientesInativos');
+            if (filtradas.length === 0) {
+                list.innerHTML = `<li class="list-item">
+                    <div><strong>Nenhum cliente para contato neste filtro</strong></div>
+                </li>`;
+            } else {
+                list.innerHTML = filtradas.map(o => {
+                    const c = o.cliente;
+                    const prioridadeLabel =
+                        o.prioridade === 'alta' ? '<span class="badge badge-danger">Alta</span>' :
+                        o.prioridade === 'media' ? '<span class="badge badge-gold">Média</span>' :
+                        '<span class="badge badge-success">Baixa</span>';
+
+                    return `
+                        <li class="list-item">
+                            <div>
+                                <strong>${c.nome}</strong> ${prioridadeLabel}<br>
+                                <small>
+                                    Última visita: ${new Date(o.ultima.data).toLocaleDateString('pt-BR')}
+                                    (${o.diasSemVir} dias) · 
+                                    ${o.riscoChurn ? '⚠ Padrão de retorno ROMPIDO' : 'Dentro do padrão'}
+                                </small><br>
+                                ${o.intervaloMedio ? `<small>Média de retorno: ${o.intervaloMedio.toFixed(1)} dias</small><br>` : ''}
+                                <small style="color:#ffc107;">${o.textoPrioridade}</small>
+                            </div>
+                            <div class="list-item-actions">
+                                <a href="${linkWhatsApp(c.telefone, o.mensagem)}" 
+                                target="_blank" class="btn btn-small">
+                                    <i class="fab fa-whatsapp"></i>
+                                </a>
+                                <button class="btn btn-secondary btn-small" onclick="marcarContatoCRM('${c.id}', '${o.motivo}')">
+                                    Marcar Contato
+                                </button>
+                            </div>
+                        </li>
+                    `;
+                }).join('');
+            }
+
+            renderAniversarios();
+            renderCrescentes();
+        }
+
+        // CRM - Aniversários
+        function renderAniversarios() {
+            const hoje = new Date();
+            const hojeLimpo = new Date(hoje.getFullYear(), hoje.getMonth(), hoje.getDate());
+            const lista = document.getElementById('crmAniversarios');
+
+            const clientesComData = clientes.filter(c => c.dataNascimento);
+            if (clientesComData.length === 0) {
+                lista.innerHTML = `<li class="list-item">
+                    <div><strong>Nenhum aniversário cadastrado</strong><br><small>Preencha a data de nascimento dos clientes.</small></div>
+                </li>`;
+                return;
+            }
+
+            const proximos = clientesComData.map(c => {
+                const [ano, mes, dia] = c.dataNascimento.split('-').map(Number);
+                let aniversario = new Date(hoje.getFullYear(), mes - 1, dia);
+                if (aniversario < hojeLimpo) {
+                    aniversario = new Date(hoje.getFullYear() + 1, mes - 1, dia);
+                }
+                const diasFaltando = Math.round((aniversario - hojeLimpo) / (1000 * 60 * 60 * 24));
+                return { cliente: c, aniversario, diasFaltando };
+            }).filter(x => x.diasFaltando >= 0 && x.diasFaltando <= 30)
+              .sort((a, b) => a.diasFaltando - b.diasFaltando);
+
+            if (proximos.length === 0) {
+                lista.innerHTML = `<li class="list-item">
+                    <div><strong>Nenhum cliente faz aniversário nos próximos 30 dias.</strong></div>
+                </li>`;
+                return;
+            }
+
+            lista.innerHTML = proximos.map(o => {
+                const c = o.cliente;
+                const label = o.diasFaltando === 0 
+                    ? 'HOJE 🎉' 
+                    : `em ${o.diasFaltando} dia(s)`;
+                const msg = o.diasFaltando === 0
+                    ? `Feliz aniversário, ${c.nome}! 🎉 Aqui é da Jeff Barber. Desejamos tudo de bom pra você. Se quiser dar aquele talento no visual hoje no seu dia, estamos à disposição.`
+                    : `Olá ${c.nome}, tudo bem? Aqui é da Jeff Barber. Passando pra dizer que seu aniversário está chegando (${label}). Se quiser, já deixo um horário reservado perto do seu dia.`;
+
+                return `
+                    <li class="list-item">
+                        <div>
+                            <strong>${c.nome}</strong><br>
+                            <small>Aniversário: ${o.aniversario.toLocaleDateString('pt-BR')} (${label})</small>
+                        </div>
+                        <a href="${linkWhatsApp(c.telefone, msg)}" 
+                           target="_blank" class="btn btn-small">
+                            <i class="fab fa-whatsapp"></i>
+                        </a>
+                    </li>
+                `;
+            }).join('');
+        }
+
+        // CRM - Clientes em crescimento de frequência
+        function renderCrescentes() {
+            const lista = document.getElementById('crmCrescentes');
+            const hoje = new Date();
+            const msDia = 24 * 60 * 60 * 1000;
+            const inicioJanelaAtual = new Date(hoje.getTime() - 60 * msDia);
+            const inicioJanelaAnterior = new Date(hoje.getTime() - 120 * msDia);
+
+            const crescentes = [];
+
+            clientes.forEach(c => {
+                const visitas = getVisitasCliente(c.id);
+                if (visitas.length === 0) return;
+
+                const recentes = visitas.filter(v => {
+                    const d = new Date(v.data);
+                    return d >= inicioJanelaAtual && d <= hoje;
+                });
+                const antigas = visitas.filter(v => {
+                    const d = new Date(v.data);
+                    return d >= inicioJanelaAnterior && d < inicioJanelaAtual;
+                });
+
+                const numRecentes = recentes.length;
+                const numAntigas = antigas.length;
+
+                if (numRecentes >= 2 && numRecentes > numAntigas) {
+                    const deltaAbs = numRecentes - numAntigas;
+                    const deltaPerc = numAntigas > 0 ? ((numRecentes - numAntigas) / numAntigas) * 100 : null;
+                    crescentes.push({ cliente: c, numRecentes, numAntigas, deltaAbs, deltaPerc });
+                }
+            });
+
+            if (crescentes.length === 0) {
+                lista.innerHTML = `<li class="list-item">
+                    <div><strong>Nenhum cliente aumentou a frequência nos últimos 60 dias.</strong></div>
+                </li>`;
+                return;
+            }
+
+            crescentes.sort((a, b) => b.deltaAbs - a.deltaAbs);
+
+            lista.innerHTML = crescentes.map(o => {
+                const c = o.cliente;
+                let textoCrescimento = '';
+                if (o.deltaPerc === null) {
+                    textoCrescimento = `Passou a frequentar: ${o.numRecentes} visita(s) nos últimos 60 dias e nenhuma no período anterior.`;
+                } else {
+                    textoCrescimento = `Crescimento de ${o.deltaAbs} visita(s): ${o.numRecentes} nos últimos 60 dias vs ${o.numAntigas} no período anterior (${o.deltaPerc.toFixed(0)}% a mais).`;
+                }
+
+                const msg = `Fala ${c.nome}! Aqui é da Jeff Barber. Notamos que você tem vindo com mais frequência nas últimas semanas, ficamos felizes demais com isso! 😊 Se quiser já deixar o próximo horário reservado, é só me dizer.`;
+
+                return `
+                    <li class="list-item">
+                        <div>
+                            <strong>${c.nome}</strong><br>
+                            <small>${textoCrescimento}</small>
+                        </div>
+                        <a href="${linkWhatsApp(c.telefone, msg)}" 
+                           target="_blank" class="btn btn-small">
+                            <i class="fab fa-whatsapp"></i>
+                        </a>
+                    </li>
+                `;
+            }).join('');
+        }
+
+        init();
+    </script>
 </body>
 </html>
