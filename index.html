@@ -602,7 +602,10 @@
         // Modais
         function openModal(id) {
             document.getElementById(id).style.display = 'block';
-            if(id === 'transacaoModal') populateClienteSelect();
+            if(id === 'transacaoModal') {
+                populateClienteSelect();
+                atualizarCampoCliente();
+            }
         }
 
         function closeModal(id) {
@@ -1002,16 +1005,19 @@
                 clientes.map(c => `<option value="${c.id}">${c.nome}</option>`).join('');
         }
 
-        document.getElementById('transacaoTipo').addEventListener('change', (e) => {
+        function atualizarCampoCliente() {
+            const tipo = document.getElementById('transacaoTipo').value;
             const clienteGroup = document.getElementById('clienteSelectGroup');
-            if (e.target.value === 'receita') {
+            if (tipo === 'receita') {
                 clienteGroup.style.display = 'block';
                 document.getElementById('transacaoCliente').required = true;
             } else {
                 clienteGroup.style.display = 'none';
                 document.getElementById('transacaoCliente').required = false;
             }
-        });
+        }
+
+        document.getElementById('transacaoTipo').addEventListener('change', atualizarCampoCliente);
 
         document.getElementById('transacaoForm').addEventListener('submit', async (e) => {
             e.preventDefault();
@@ -1056,13 +1062,7 @@
             document.getElementById('transacaoModalTitle').textContent = 'Editar Transação';
             document.getElementById('transacaoSubmitBtn').textContent = 'Salvar Alterações';
 
-            if (t.tipo === 'despesa') {
-                document.getElementById('clienteSelectGroup').style.display = 'none';
-                document.getElementById('transacaoCliente').required = false;
-            } else {
-                document.getElementById('clienteSelectGroup').style.display = 'block';
-                document.getElementById('transacaoCliente').required = true;
-            }
+            atualizarCampoCliente();
 
             openModal('transacaoModal');
         }
