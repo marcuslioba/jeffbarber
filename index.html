@@ -1,0 +1,2424 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Jeff Barber CRM | Inteligente</title>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --primary: #c5a059;
+            --bg-dark: #121417;
+            --card-bg: #1e2126;
+            --sidebar-bg: #1a1d21;
+            --text-main: #e0e0e0;
+            --text-muted: #a0a0a0;
+            --accent: #2c3138;
+            --success: #27ae60;
+            --danger: #e74c3c;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Inter', 'Segoe UI', sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-dark);
+            color: var(--text-main);
+            display: flex;
+            min-height: 100vh;
+        }
+
+        .sidebar {
+            width: 260px;
+            background: var(--sidebar-bg);
+            border-right: 1px solid var(--accent);
+            display: flex;
+            flex-direction: column;
+            padding: 20px;
+            position: fixed;
+            height: 100vh;
+            overflow-y: auto;
+        }
+
+        .logo-area {
+            text-align: center;
+            padding-bottom: 30px;
+            border-bottom: 1px solid var(--accent);
+            margin-bottom: 20px;
+        }
+
+        .logo-area h1 {
+            color: var(--primary);
+            font-size: 22px;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+        }
+
+        .nav-menu {
+            list-style: none;
+            flex-grow: 1;
+        }
+
+        .nav-item {
+            padding: 12px 15px;
+            border-radius: 10px;
+            cursor: pointer;
+            margin-bottom: 8px;
+            transition: 0.3s;
+            display: flex;
+            align-items: center;
+            color: var(--text-muted);
+            font-weight: 500;
+        }
+
+        .nav-item i {
+            margin-right: 12px;
+            width: 20px;
+            text-align: center;
+        }
+
+        .nav-item:hover, .nav-item.active {
+            background: var(--accent);
+            color: var(--primary);
+        }
+
+        .main-content {
+            margin-left: 260px;
+            flex-grow: 1;
+            padding: 30px;
+            width: calc(100% - 260px);
+        }
+
+        .header-title {
+            margin-bottom: 30px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .header-title h2 {
+            font-size: 24px;
+            color: var(--text-main);
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .stat-card {
+            background: var(--card-bg);
+            padding: 20px;
+            border-radius: 15px;
+            border: 1px solid var(--accent);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .stat-card::after {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; width: 4px; height: 100%;
+            background: var(--primary);
+        }
+
+        .stat-card h3 {
+            font-size: 13px;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            margin-bottom: 10px;
+        }
+
+        .stat-card .value {
+            font-size: 24px;
+            font-weight: 700;
+            color: var(--primary);
+        }
+
+        .grid-2 {
+            display: grid;
+            grid-template-columns: 2fr 1fr;
+            gap: 20px;
+        }
+
+        .card {
+            background: var(--card-bg);
+            border-radius: 15px;
+            padding: 25px;
+            border: 1px solid var(--accent);
+            margin-bottom: 20px;
+        }
+
+        .card h2 {
+            font-size: 18px;
+            margin-bottom: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .form-group { margin-bottom: 15px; }
+        label { display: block; margin-bottom: 5px; font-size: 14px; color: var(--text-muted); }
+        input, select, textarea {
+            width: 100%;
+            background: var(--bg-dark);
+            border: 1px solid var(--accent);
+            padding: 10px;
+            border-radius: 8px;
+            color: white;
+            outline: none;
+        }
+        input:focus, select:focus, textarea:focus { border-color: var(--primary); }
+        input:read-only { background-color: #2c3138; cursor: not-allowed; opacity: 0.7; }
+
+        .btn {
+            background: var(--primary);
+            color: #000;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 8px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: 0.3s;
+        }
+
+        .btn:hover { opacity: 0.8; transform: translateY(-2px); }
+
+        .btn-secondary {
+            background: var(--accent);
+            color: var(--text-main);
+        }
+
+        .btn-danger {
+            background: var(--danger);
+            color: white;
+        }
+
+        .btn-small {
+            padding: 5px 12px;
+            font-size: 12px;
+        }
+
+        .item-list { list-style: none; }
+        .list-item {
+            background: var(--accent);
+            margin-bottom: 10px;
+            padding: 15px;
+            border-radius: 10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .list-item-actions {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        .badge {
+            padding: 4px 10px;
+            border-radius: 6px;
+            font-size: 11px;
+            font-weight: bold;
+        }
+
+        .badge-gold { background: var(--primary); color: black; }
+        .badge-success { background: var(--success); color: white; }
+        .badge-danger { background: var(--danger); color: white; }
+
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.7);
+            overflow-y: auto;
+        }
+
+        .modal-content {
+            background-color: var(--card-bg);
+            margin: 5% auto;
+            padding: 30px;
+            border: 1px solid var(--accent);
+            border-radius: 15px;
+            width: 90%;
+            max-width: 600px;
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .close {
+            color: var(--text-muted);
+            font-size: 28px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        .close:hover { color: var(--primary); }
+
+        .grid-3 {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 15px;
+        }
+
+        .alert {
+            padding: 12px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+        }
+
+        .alert-warning {
+            background: rgba(255, 193, 7, 0.1);
+            border: 1px solid rgba(255, 193, 7, 0.3);
+            color: #ffc107;
+        }
+
+        .filter-buttons {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+
+        @media (max-width: 768px) {
+            .sidebar { width: 70px; padding: 10px; }
+            .sidebar span, .logo-area h1 { display: none; }
+            .main-content { margin-left: 70px; width: calc(100% - 70px); }
+            .grid-2, .grid-3 { grid-template-columns: 1fr; }
+        }
+
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: var(--bg-dark); }
+        ::-webkit-scrollbar-thumb { background: var(--accent); border-radius: 10px; }
+
+        /* Modal Content */
+#crmConfigModal .modal-content {
+    background-color: #1c1c1e;
+    border-radius: 16px;
+    padding: 24px 28px;
+    max-width: 480px;
+    box-shadow: 0 20px 40px rgba(0,0,0,0.6);
+    color: #f6f7f2;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen,
+        Ubuntu, Cantarell, "Open Sans", "Helvetica Neue", sans-serif;
+}
+
+.btn-info i {
+  color: var(--primary);
+  font-size: 16px;
+}
+.btn-info:hover i {
+  color: var(--success);
+}
+
+/* Modal Header */
+#crmConfigModal .modal-header h2 {
+    font-weight: 600;
+    font-size: 22px;
+    margin-bottom: 20px;
+    color: #e0e0e0;
+}
+
+/* Close Button */
+#crmConfigModal .close {
+    color: #a0a0a0;
+    font-size: 28px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: color 0.2s ease;
+}
+#crmConfigModal .close:hover {
+    color: #8ab4f8; /* azul suave para hover */
+}
+
+/* Labels */
+#crmConfigModal label {
+    display: block;
+    font-weight: 500;
+    font-size: 14px;
+    margin-bottom: 8px;
+    color: #b0b0b0;
+}
+/* Select */
+#crmSegmentSelect {
+    width: 100%;
+    padding: 10px 14px;
+    border-radius: 12px;
+    border: 1px solid #444444;
+    background-color: #1f1f23;
+    color: #e0e0e0;
+    font-size: 16px;
+    font-weight: 500;
+    appearance: none;
+    cursor: pointer;
+    transition: border-color 0.3s ease;
+    background-image: url("data:image/svg+xml;charset=US-ASCII,%3csvg width='12' height='7' viewBox='0 0 12 7' fill='none' xmlns='http://www.w3.org/2000/svg'%3e%3cpath d='M1 1L6 6L11 1' stroke='%23e0e0e0' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3e%3c/svg%3e");
+    background-repeat: no-repeat;
+    background-position: right 14px center;
+    background-size: 12px 7px;
+}
+#crmSegmentSelect:focus {
+    outline: none;
+    border-color: #8ab4f8;
+    box-shadow: 0 0 8px rgba(138, 180, 248, 0.6);
+}
+
+/* Textarea */
+#crmTemplateMsg {
+    width: 100%;
+    min-height: 120px;
+    padding: 14px 16px;
+    border-radius: 16px;
+    border: 1px solid #444444;
+    background-color: #1f1f23;
+    color: #e0e0e0;
+    font-size: 16px;
+    font-weight: 400;
+    resize: vertical;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen,
+        Ubuntu, Cantarell, "Open Sans", "Helvetica Neue", sans-serif;
+    transition: border-color 0.3s ease;
+}
+#crmTemplateMsg:focus {
+    outline: none;
+    border-color: #8ab4f8;
+    box-shadow: 0 0 8px rgba(138, 180, 248, 0.6);
+}
+
+/* Buttons */
+#crmConfigModal .btn {
+    background-color: #8ab4f8; /* azul suave */
+    color: #1f1f23;
+    font-weight: 700;
+    border-radius: 14px;
+    padding: 12px 24px;
+    border: none;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+    flex: 1;
+}
+#crmConfigModal .btn:hover {
+    background-color: #6a8ee6;
+}
+
+#crmConfigModal .btn-secondary {
+    background-color: #444444;
+    color: #e0e0e0;
+    font-weight: 600;
+    border-radius: 14px;
+    padding: 12px 24px;
+    border: none;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+    flex: 1;
+}
+#crmConfigModal .btn-secondary:hover {
+    background-color: #5a5a5a;
+}
+
+/* Small text below textarea */
+#crmConfigModal small {
+    display: block;
+    margin-top: 6px;
+    color: #8e8e93;
+    font-size: 13px;
+    font-weight: 400;
+}
+/* Modal Content - fundo mais neutro e suave */
+#crmConfigModal .modal-content {
+    background-color: #2b2b2f; /* cinza escuro neutro */
+    border-radius: 16px;
+    padding: 24px 28px;
+    max-width: 480px;
+    box-shadow: 0 12px 24px rgba(0,0,0,0.5);
+    color: #e0e0e0;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen,
+        Ubuntu, Cantarell, "Open Sans", "Helvetica Neue", sans-serif;
+}
+
+/* Efeito de Hover nas Categorias (Backdrops) */
+.crm-header:hover .crm-header-left, 
+.crm-header:hover i, 
+.crm-header:hover span {
+    color: #c5a059 !important;
+    transition: color 0.3s ease;
+}
+
+/* Cards do CRM - fundo neutro e bordas suaves */
+#crm .card {
+margin-bottom: 24px;
+    box-shadow: none;
+}
+
+#crm h2 {
+    color: #ffffff; /* Texto branco puro, sem cores */
+    font-size: 18px;
+    font-weight: 600;
+    letter-spacing: -0.5px;
+    border-bottom: 1px solid #2c2c2e;
+    padding-bottom: 12px;
+}
+
+#crm .list-item {
+    background-color: transparent; /* Fundo transparente para estilo lista */
+    border-bottom: 1px solid #2c2c2e; /* Divisória fina estilo iOS */
+    border-radius: 0;
+    padding: 14px 0;
+    margin-bottom: 0;
+}
+
+#crm .list-item:last-child {
+    border-bottom: none;
+}
+
+/* Badges e ícones - cores suaves */
+#crm .badge {
+    background-color: #5a5a5a;
+    color: #d0d0d0;
+    font-weight: 600;
+    border-radius: 8px;
+    padding: 4px 10px;
+    font-size: 12px;
+}
+
+/* Botões WhatsApp e Ver - cores neutras */
+/* Botão WhatsApp Ghost - Minimalista */
+.btn-whatsapp-ghost {
+    background: transparent !important;
+    color: #a0a0a0 !important;
+    border: 1px solid #3a3a3c !important;
+    font-weight: 500 !important;
+    transition: all 0.2s ease;
+    border-radius: 07px !important; /* Arredondamento solicitado */
+    padding: 4px 10px;
+}
+
+.btn-whatsapp-ghost:hover {
+    background: #2c2c2e !important;
+    color: #ffffff !important;
+    border-color: #48484a !important;
+}
+
+/* O CARD DE ANIVERSÁRIO (O item da lista que você queria arredondar) */
+.card-aniversario-hoje {
+    background-color: rgba(52, 199, 89, 0.15) !important;
+    border: 1px solid rgba(52, 199, 89, 0.4) !important;
+    border-radius: 15px !important; /* Arredondamento pronunciado */
+    margin: 10px 0 !important;
+    padding: 15px !important;
+}
+
+/* CRM ATIVO - Estética iOS */
+.crm-section {
+    background-color: #1c1c1e; /* Cinza escuro iOS */
+    border-radius: 14px;
+    margin-bottom: 12px;
+    border: 1px solid #2c2c2e;
+    overflow: hidden;
+}
+
+.crm-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 16px;
+    cursor: pointer;
+    background: transparent; /* Fundo padrão limpo */
+    transition: all 0.2s ease-in-out;
+    border-radius: 12px; /* Arredondado para o efeito de clique */
+}
+/* Efeito Hover igual à barra lateral */
+.crm-header:hover {
+    background-color: rgba(255, 255, 255, 0.05); /* Cinza sutil idêntico ao hover lateral */
+    padding-left: 20px; /* Leve recuo para indicar interação */
+}
+/* Mudança de cor no hover */
+.crm-header:hover .crm-header-left, 
+.crm-header:hover .crm-header-left i {
+    color: #c5a059 !important;
+}
+.crm-header-left {
+    display: flex;
+    align-items: center;
+    gap: 12px; /* Texto perto do ícone */
+    color: #ffffff;
+    font-size: 16px;
+    font-weight: 500;
+}
+
+.crm-header-left i {
+    font-size: 1.2em;
+    width: 24px;
+    text-align: center;
+}
+
+/* Badge de Notificação */
+.crm-badge {
+    background-color: #2c2c2e;
+    color: #8e8e93;
+    font-size: 12px;
+    padding: 2px 10px;
+    border-radius: 20px;
+    font-weight: 600;
+    transition: all 0.3s ease;
+}
+
+.crm-content {
+    display: none;
+    padding: 0 16px 16px 16px;
+    border-top: 1px solid #2c2c2e;
+}
+
+.crm-section.active .crm-content {
+    display: block;
+}
+
+/* Hover leve + zoom nos stat-cards FINANCEIRO --------------------------------------------------------------------------------------------------------------------*/
+.stat-card {
+  transition: transform 0.22s ease, box-shadow 0.22s ease;
+  will-change: transform;
+}
+.stat-card:hover {
+  /*transform: translateY(-6px) scale(1.03);*/
+  box-shadow: 0 7px 15px rgba(0,0,0,0.45);
+  transform: translateY(-6.5px) scale(1);
+}
+
+/* Filtros da área de transações (alinhados à direita do título) */
+.trans-filters {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  margin-left: 12px;
+}
+
+
+
+/* inputs de data e select compactos */
+.trans-filters input[type="date"],
+.trans-filters select {
+  background: var(--bg-dark);
+  border: 1px solid var(--accent);
+  padding: 7px 8px;
+  border-radius: 8px;
+  color: var(--text-main);
+  font-size: 13px;
+  height: 36px;
+}
+
+/* botões pequenos na linha */
+.trans-filters .btn-small {
+  padding: 6px 10px;
+  height: 36px;
+  display: inline-flex;
+  align-items: center;
+}
+
+/* Dropdown (menu) para recolher a seção */
+.dropdown {
+  position: relative;
+}
+.dropdown .dropdown-menu {
+  position: absolute;
+  right: 0;
+  top: calc(100% + 8px);
+  background: var(--card-bg);
+  border: 1px solid var(--accent);
+  border-radius: 10px;
+  display: none;
+  min-width: 160px;
+  z-index: 60;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.45);
+  padding: 6px;
+}
+.dropdown.open .dropdown-menu { display: block; }
+.dropdown .dropdown-item {
+  display: block;
+  width: 100%;
+  text-align: left;
+  background: transparent;
+  border: none;
+  padding: 8px 10px;
+  color: var(--text-main);
+  cursor: pointer;
+  border-radius: 8px;
+  font-size: 14px;
+}
+.dropdown .dropdown-item:hover {
+  background: rgba(197,160,89,0.06);
+  color: var(--primary);
+}
+
+/* Recolher / Expandir seção */
+.card.collapsed .card-content { display: none; }
+.card.collapsed h2 span.title::after {
+  content: " (recolhido)";
+  color: var(--text-muted);
+  font-size: 12px;
+  margin-left: 8px;
+}
+
+/* Responsividade: empilha controles em telas pequenas */
+@media (max-width: 720px) {
+  .trans-filters { flex-wrap: wrap; gap:6px; }
+  .trans-filters input[type="date"], .trans-filters select { width: 100%; }
+}
+
+/* Delta badge abaixo do valor principal CARDS DO DASHBOARD ESTILO IFOOD COM CÁLCULOS EM RELAÇÃO AO PERÍODO PASSADO*/
+.stat-card .delta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 8px;
+  font-size: 13px;
+  color: var(--text-muted);
+}
+.stat-card .delta .icon {
+  width: 18px;
+  height: 18px;
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  font-size: 12px;
+  border-radius: 4px;
+}
+.stat-card .delta.up {
+  color: var(--success);
+}
+.stat-card .delta.up .icon {
+  background: rgba(39,174,96,0.12);
+  color: var(--success);
+}
+.stat-card .delta.down {
+  color: var(--danger);
+}
+.stat-card .delta.down .icon {
+  background: rgba(231,76,60,0.12);
+  color: var(--danger);
+}
+.stat-card .delta.neutral {
+  color: var(--text-muted);
+}
+    </style>
+</head>
+<body>
+
+    <aside class="sidebar">
+        <div class="logo-area">
+            <h1>JEFF BARBER</h1>
+        </div>
+        <nav class="nav-menu">
+            <div class="nav-item active" onclick="switchTab('dashboard', this)">
+                <i class="fas fa-chart-line"></i><span>Dashboard</span>
+            </div>
+            <div class="nav-item" onclick="switchTab('clientes', this)">
+                <i class="fas fa-users"></i><span>Clientes</span>
+            </div>
+            <div class="nav-item" onclick="switchTab('crm', this)">
+                <i class="fas fa-bullseye"></i><span>CRM Ativo</span>
+            </div>
+            <div class="nav-item" onclick="switchTab('financeiro', this)">
+                <i class="fas fa-wallet"></i><span>Financeiro</span>
+            </div>
+            <div class="nav-item" onclick="switchTab('config', this)">
+                <i class="fas fa-cog"></i><span>Configurações</span>
+            </div>
+        </nav>
+    </aside>
+
+    <main class="main-content">
+        <div id="dashboard" class="tab-content active">
+            <div class="header-title">
+                <h2>Resumo Executivo</h2>
+                <div class="filter-buttons">
+                    <button class="btn btn-small" onclick="setFiltroDashboard(7)">7 dias</button>
+                    <button class="btn btn-small" onclick="setFiltroDashboard(15)">15 dias</button>
+                    <button class="btn btn-small btn-secondary" onclick="setFiltroDashboard(30)">30 dias</button>
+                </div>
+            </div>
+            
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <h3>Receita no Período</h3>
+                    <div class="value" id="receitaMes">R$ 0,00</div>
+                </div>
+                <div class="stat-card">
+                    <h3>Ticket Médio</h3>
+                    <div class="value" id="ticketMedio">R$ 0,00</div>
+                </div>
+                <div class="stat-card">
+                    <h3>Visitas no Período</h3>
+                    <div class="value" id="totalVisitas">0</div>
+                </div>
+                <div class="stat-card">
+                    <h3>Novos Clientes</h3>
+                    <div class="value" id="novosClientes">0</div>
+                </div>
+            </div>
+
+            <div class="grid-2">
+                <div class="card">
+                    <h2>📈 Desempenho Financeiro</h2>
+                    <div style="height: 300px;">
+                        <canvas id="financeChart"></canvas>
+                    </div>
+                </div>
+                <div class="card">
+                    <h2>👑 Top Clientes</h2>
+                    <ul class="item-list" id="vipListShort"></ul>
+                </div>
+            </div>
+
+            <div class="grid-2">
+                <div class="card">
+                    <h2>📅 Dias de Maior Movimento</h2>
+                    <ul class="item-list" id="diasMovimento"></ul>
+                </div>
+                <div class="card">
+                    <h2>💳 Formas de Pagamento</h2>
+                    <ul class="item-list" id="formasPagamento"></ul>
+                </div>
+            </div>
+        </div>
+        <!-- BOTAO (i) para dar o a informação completa dentro dos cards de KPI DO DASHBOARD -->
+        <div id="detalhesModal" class="modal" style="display:none; position:fixed; z-index:2000; left:0; top:0; width:100%; height:100%; background:rgba(0,0,0,0.6);">
+  <div style="background: var(--card-bg); color: var(--text-main); max-width: 400px; margin: 10% auto; padding: 20px; border-radius: 12px; position: relative;">
+    <button onclick="fecharModalDetalhes()" style="position:absolute; top:10px; right:10px; background:none; border:none; font-size:20px; color: var(--text-muted); cursor:pointer;">&times;</button>
+    <h3>Detalhes da Variação</h3>
+    <div id="detalhesConteudo" style="margin-top: 15px; font-size: 16px;"></div>
+  </div>
+
+</div>
+
+<div id="clientes" class="tab-content" style="display:none">
+    <div class="header-title">
+        <h2>Gestão de Clientes</h2>
+        <button class="btn" onclick="openModal('clienteModal')">
+            <i class="fas fa-plus"></i> Novo Cliente
+        </button>
+    </div>
+    <div class="card">
+        <div class="form-group" style="margin-bottom: 20px;">
+            <input type="text" id="clienteSearch" placeholder="Buscar por nome ou documento..." style="width: 100%;">
+        </div>
+        <ul class="item-list" id="clientesList"></ul>
+    </div>
+</div>
+
+<div id="crm" class="tab-content" style="display:none">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+        <h2 style="margin:0; font-size: 24px; color: #fff;">CRM Ativo</h2>
+        <button class="btn btn-secondary" onclick="openModal('crmConfigModal')" style="border-radius: 50%; width: 40px; height: 40px; padding: 0;">
+            <i class="fas fa-cog"></i>
+        </button>
+    </div>
+
+    <div class="crm-section" id="sec-aniversario">
+        <div class="crm-header" onclick="toggleCRMSection('sec-aniversario')">
+            <div class="crm-header-left">
+                <i class="fas fa-birthday-cake"></i>
+                <span>Aniversariantes do Mês</span>
+            </div>
+            <span class="crm-badge" id="badge-aniversario">0</span>
+        </div>
+        <div class="crm-content">
+            <ul class="item-list" id="listaAniversariantes" style="list-style: none; padding: 0;"></ul>
+        </div>
+    </div>
+
+    <div class="crm-section" id="sec-inativos15">
+        <div class="crm-header" onclick="toggleCRMSection('sec-inativos15')">
+            <div class="crm-header-left">
+                <i class="fas fa-user-clock"></i>
+                <span>Inativos há 15+ dias</span>
+            </div>
+            <span class="crm-badge" id="badge-inativos15">0</span>
+        </div>
+        <div class="crm-content">
+            <ul class="item-list" id="listaInativos15" style="list-style: none; padding: 0;"></ul>
+        </div>
+    </div>
+
+    <div class="crm-section" id="sec-inativos30">
+        <div class="crm-header" onclick="toggleCRMSection('sec-inativos30')">
+            <div class="crm-header-left">
+                <i class="fas fa-exclamation-circle"></i>
+                <span>Inativos há 30+ dias</span>
+            </div>
+            <span class="crm-badge" id="badge-inativos30">0</span>
+        </div>
+        <div class="crm-content">
+            <ul class="item-list" id="listaInativos30" style="list-style: none; padding: 0;"></ul>
+        </div>
+    </div>
+
+    <div class="crm-section" id="sec-frequencia">
+        <div class="crm-header" onclick="toggleCRMSection('sec-frequencia')">
+            <div class="crm-header-left">
+                <i class="fas fa-chart-line"></i> <span>Atenção: Frequência</span>
+            </div>
+            <span class="crm-badge" id="badge-frequencia">0</span>
+        </div>
+        <div class="crm-content">
+            <ul class="item-list" id="listaQuedaFrequencia" style="list-style: none; padding: 0;"></ul>
+        </div>
+    </div>
+
+    <div class="crm-section" id="sec-churn">
+        <div class="crm-header" onclick="toggleCRMSection('sec-churn')">
+            <div class="crm-header-left">
+                <i class="fas fa-user-slash"></i>
+                <span>Recuperação de Clientes</span>
+            </div>
+            <span class="crm-badge" id="badge-churn">0</span>
+        </div>
+        <div class="crm-content">
+            <ul class="item-list" id="listaChurn" style="list-style: none; padding: 0;"></ul>
+        </div>
+    </div>
+</div>
+
+<div id="crmConfigModal" class="modal">
+    <div class="modal-content">
+        <h3>Configurar Mensagens CRM</h3>
+        <label>Selecione o Segmento:</label>
+        <select id="crmSegmentSelect" class="form-control" style="margin-bottom: 15px;">
+            <option value="aniversario">Aniversariantes</option>
+            <option value="inativos15">Inativos 15+ dias</option>
+            <option value="inativos30">Inativos 30+ dias</option>
+            <option value="queda">Atenção: Frequência</option>
+            <option value="churn">Recuperação</option>
+        </select>
+        
+        <label>Mensagem (Use {{nome}} para o nome do cliente):</label>
+        <textarea id="crmTemplateMsg" class="form-control" rows="5"></textarea>
+        
+        <div style="margin-top: 20px; display: flex; gap: 10px;">
+            <button class="btn btn-primary" onclick="salvarTemplateCRM()">Salvar</button>
+            <button class="btn btn-secondary" onclick="closeModal('crmConfigModal')">Cancelar</button>
+        </div>
+    </div>
+</div>
+
+<div id="crmConfigModal" class="modal">
+  <div class="modal-content">
+    <div class="modal-header">
+      <h2>Configurar Mensagem WhatsApp</h2>
+      <span class="close" onclick="closeModal('crmConfigModal')">&times;</span>
+    </div>
+
+    <div class="form-group">
+      <label>Segmento</label>
+      <select id="crmSegmentSelect">
+        <option value="aniversario">Aniversariantes do Mês</option>
+        <option value="inativos15">Inativos há 15+ dias</option>
+        <option value="inativos30">Inativos há 30+ dias</option>
+        <option value="queda">Frequência Diminuindo</option>
+        <option value="churn">Risco de Churn</option>
+      </select>
+    </div>
+
+    <div class="form-group">
+      <label>Template da Mensagem</label>
+      <textarea id="crmTemplateMsg" rows="6" placeholder="Olá {{nome}}, ..."></textarea>
+      <small style="color: var(--text-muted);">Use <strong>{{nome}}</strong> para inserir o primeiro nome do cliente automaticamente.</small>
+    </div>
+
+    <div style="display:flex; gap:10px; margin-top:12px;">
+      <button class="btn" onclick="salvarTemplateCRM()">Salvar Template</button>
+      <button class="btn btn-secondary" onclick="resetTemplateDefault()">Restaurar Padrão</button>
+    </div>
+  </div>
+</div>
+
+        <div id="financeiro" class="tab-content" style="display:none">
+            <div class="header-title">
+                <h2>Financeiro Detalhado</h2>
+                <button class="btn" onclick="openModal('transacaoModal')">
+                    <i class="fas fa-plus"></i> Nova Transação
+                </button>
+            </div>
+
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <h3>Total Receitas</h3>
+                    <div class="value" id="totalReceitas">R$ 0,00</div>
+                </div>
+                <div class="stat-card">
+                    <h3>Total Despesas</h3>
+                    <div class="value" id="totalDespesas">R$ 0,00</div>
+                </div>
+                <div class="stat-card">
+                    <h3>Lucro Líquido</h3>
+                    <div class="value" id="lucroLiquido">R$ 0,00</div>
+                </div>
+            </div>
+
+<div class="card" id="transacoesCard">
+  <h2>
+    <span class="title">💰 Últimas Transações</span>
+
+    <!-- Controles / Filtros alinhados à direita -->
+    <div class="trans-filters" style="margin-left:auto;">
+      <select id="filtroTipo" title="Tipo">
+        <option value="todas">Todas</option>
+        <option value="receita">Receitas</option>
+        <option value="despesa">Despesas</option>
+      </select>
+
+      <input type="date" id="filtroDataInicio" title="Data início">
+      <input type="date" id="filtroDataFim" title="Data fim">
+
+      <button class="btn btn-small btn-secondary" id="aplicarFiltroBtn" onclick="aplicarFiltroTransacoes()">Aplicar</button>
+      <button class="btn btn-small" id="limparFiltroBtn" onclick="limparFiltroTransacoes()">Limpar</button>
+
+      <!-- Dropdown para recolher a seção -->
+      <div class="dropdown" style="margin-left:6px;">
+        <button class="btn btn-small" id="dropdownToggle" onclick="toggleDropdownMenu(event)">
+          <i class="fas fa-ellipsis-v"></i>
+        </button>
+        <div class="dropdown-menu" id="dropdownMenu">
+          <button class="dropdown-item" onclick="toggleTransacoesSection()">Recolher / Expandir seção</button>
+        </div>
+      </div>
+    </div>
+  </h2>
+
+  <div class="card-content">
+    <ul class="item-list" id="transacoesList"></ul>
+  </div>
+</div>
+        </div>
+
+        <div id="config" class="tab-content" style="display:none">
+            <div class="header-title">
+                <h2>Configurações</h2>
+            </div>
+            <div class="card">
+                <h2>⚙️ Preferências do Sistema</h2>
+                <p style="color: var(--text-muted);">Em breve: dados da barbearia, integrações, backup, etc.</p>
+            </div>
+        </div>
+    </main>
+
+    <div id="clienteModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Novo Cliente</h2>
+                <span class="close" onclick="closeModal('clienteModal')">&times;</span>
+            </div>
+            <form id="clienteForm">
+                <div class="form-group">
+                    <label>Nome Completo</label>
+                    <input type="text" id="clienteNome" placeholder="Ex: João Silva" required>
+                </div>
+                <div class="form-group">
+                    <label>WhatsApp</label>
+                    <input type="tel" id="clienteTelefone" placeholder="11999999999" pattern="\d{10,11}" required>
+                </div>
+                <div class="form-group">
+                    <label>Data de Nascimento</label>
+                    <input type="date" id="clienteNascimento">
+                </div>
+                <div class="form-group">
+                    <label>Observações (opcional)</label>
+                    <textarea id="clienteObs" rows="3" placeholder="Ex: Prefere corte degradê"></textarea>
+                </div>
+                <button type="submit" class="btn">Cadastrar Cliente</button>
+                <div class="form-group">
+</div>
+            </form>
+        </div>
+    </div>
+
+    <div id="transacaoModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 id="transacaoModalTitle">Nova Transação</h2>
+                <span class="close" onclick="closeModal('transacaoModal')">&times;</span>
+            </div>
+            <form id="transacaoForm">
+                <input type="hidden" id="transacaoId">
+                <div class="form-group">
+                    <label>Tipo</label>
+                    <select id="transacaoTipo" required>
+                        <option value="receita">Receita</option>
+                        <option value="despesa">Despesa</option>
+                    </select>
+                </div>
+                <div class="form-group" id="clienteSelectGroup">
+                    <label>Cliente</label>
+                    <select id="transacaoCliente" required>
+                        <option value="">Selecione um cliente</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Descrição</label>
+                    <input type="text" id="transacaoDesc" placeholder="Ex: Corte + Barba" required>
+                </div>
+                <div class="grid-3">
+                    <div class="form-group">
+                        <label>Valor (R$)</label>
+                        <input type="number" id="transacaoValor" step="0.01" min="0" placeholder="50.00" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Data</label>
+                        <input type="date" id="transacaoData" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Pagamento</label>
+                        <select id="transacaoPagamento">
+                            <option value="dinheiro">Dinheiro</option>
+                            <option value="pix">PIX</option>
+                            <option value="cartao">Cartão</option>
+                        </select>
+                    </div>
+                </div>
+                <button type="submit" class="btn" id="transacaoSubmitBtn">Registrar Transação</button>
+            </form>
+        </div>
+    </div>
+
+    <div id="perfilModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 id="perfilNome">Perfil do Cliente</h2>
+                <span class="close" onclick="closeModal('perfilModal')">&times;</span>
+            </div>
+            <div id="perfilConteudo"></div>
+        </div>
+    </div>
+
+    <script>
+        // Firebase Config
+        const firebaseConfig = {
+            apiKey: "AIzaSyByRlYBbZN3ZqQuUuRW_szdi7iczyVxyx8",
+            authDomain: "jeff-51ee7.firebaseapp.com",
+            projectId: "jeff-51ee7",
+            storageBucket: "jeff-51ee7.firebasestorage.app",
+            messagingSenderId: "505894646506",
+            appId: "1:505894646506:web:48c49e86656115350ddd93"
+        };
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.firestore();
+
+        let transacoes = [];
+        let clientes = [];
+        let financeChart = null;
+        let filtroDashboardDias = 30;
+
+// --- CONFIGURAÇÃO DE MENSAGENS E CRM ---
+const MSG_DEFAULT = "Olá {{nome}}, tudo bem? Notamos que faz um tempo que não nos visita. Que tal agendar um horário?";
+
+function getTemplateCRM() {
+    return localStorage.getItem('crm_msg_template') || MSG_DEFAULT;
+}
+
+function salvarTemplateCRM() {
+    const segment = document.getElementById('crmSegmentSelect').value;
+    const msg = document.getElementById('crmTemplateMsg').value;
+    const templates = getTemplates();
+    
+    templates[segment] = msg;
+    localStorage.setItem(CRM_TEMPLATES_KEY, JSON.stringify(templates));
+    
+    alert('✅ Mensagem do segmento atualizada!');
+    closeModal('crmConfigModal');
+    renderCRM();
+}
+
+// Configuração de Mensagens
+const CRM_TEMPLATES_KEY = 'crm_templates_v2';
+const DEFAULT_TEXTS = {
+    aniversario: "Parabéns, {{nome}}! 🎂 Tudo bem? Passando para te desejar um feliz aniversário!",
+    inativos15: "Oi {{nome}}, tudo bem? Notamos que faz 15 dias que não nos visita...",
+    inativos30: "Olá {{nome}}! Já faz 30 dias que você veio aqui. Vamos agendar?",
+    queda: "Oi {{nome}}, tudo certo? Notamos que você está demorando um pouco mais para vir...",
+    churn: "Olá {{nome}}, sentimos sua falta! Preparamos uma condição especial para sua volta."
+};
+
+function getTemplates() {
+    const saved = localStorage.getItem(CRM_TEMPLATES_KEY);
+    return saved ? JSON.parse(saved) : DEFAULT_TEXTS;
+}
+
+// Atualiza o texto do modal quando muda o segmento
+document.getElementById('crmSegmentSelect').addEventListener('change', function() {
+    const segment = this.value;
+    const templates = getTemplates();
+    document.getElementById('crmTemplateMsg').value = templates[segment] || "";
+});
+
+// Salva a mensagem no LocalStorage
+function salvarTemplateCRM() {
+    const segment = document.getElementById('crmSegmentSelect').value;
+    const msg = document.getElementById('crmTemplateMsg').value;
+    const templates = getTemplates();
+    templates[segment] = msg;
+    localStorage.setItem(CRM_TEMPLATES_KEY, JSON.stringify(templates));
+    alert("Mensagem salva com sucesso!");
+    closeModal('crmConfigModal');
+}
+
+function renderCRM() {
+    const hoje = new Date();
+    const mesAtual = hoje.getMonth() + 1;
+    const diaAtual = hoje.getDate();
+    
+    // Arrays para cada categoria
+    const inativos15 = [];
+    const inativos30 = [];
+    const listaQueda = [];
+    const listaChurn = [];
+
+    clientes.forEach(c => {
+        const visitas = getVisitasCliente(c.id);
+        if (visitas.length === 0) return;
+
+        const ultimaVisita = parseDateFortaleza(visitas[visitas.length - 1].data);
+        const diasInativo = Math.floor((hoje - ultimaVisita) / (1000 * 60 * 60 * 24));
+        
+        if (diasInativo >= 45) {
+            listaChurn.push({ ...c, diasInativo });
+        } else if (diasInativo >= 30) {
+            inativos30.push({ ...c, diasInativo });
+        } else if (diasInativo >= 15) {
+            inativos15.push({ ...c, diasInativo });
+        }
+
+        const freq = calcularTaxaFrequencia(visitas);
+        if (freq && diasInativo > (freq * 1.5) && diasInativo < 15) {
+            listaQueda.push({ ...c, diasInativo, freqMedia: Math.floor(freq) });
+        }
+    });
+
+    // 1. Filtrar e ORDENAR Aniversariantes por dia
+    const aniversariantes = clientes
+        .filter(c => {
+            if (!c.dataNascimento) return false;
+            return parseInt(c.dataNascimento.split('-')[1]) === mesAtual;
+        })
+        .sort((a, b) => {
+            const diaA = parseInt(a.dataNascimento.split('-')[2]);
+            const diaB = parseInt(b.dataNascimento.split('-')[2]);
+            return diaA - diaB;
+        });
+
+    // 2. Renderizar cada lista e atualizar os badges
+    renderizarListaCRM('listaAniversariantes', aniversariantes, 'aniversario', diaAtual);
+    renderizarListaCRM('listaInativos15', inativos15, 'inativos15');
+    renderizarListaCRM('listaInativos30', inativos30, 'inativos30');
+    renderizarListaCRM('listaQuedaFrequencia', listaQueda, 'queda');
+    renderizarListaCRM('listaChurn', listaChurn, 'churn');
+}
+
+function renderizarListaCRM(idElemento, dados, segmentKey, diaAtual = null) {
+    const lista = document.getElementById(idElemento);
+    
+    // Lógica corrigida para encontrar o badge e somar as notificações
+    const badgeMap = {
+        'listaAniversariantes': 'badge-aniversario',
+        'listaInativos15': 'badge-inativos15',
+        'listaInativos30': 'badge-inativos30',
+        'listaQuedaFrequencia': 'badge-frequencia',
+        'listaChurn': 'badge-churn'
+    };
+    
+    const badge = document.getElementById(badgeMap[idElemento]);
+    if (badge) {
+        badge.innerText = dados.length;
+        badge.style.display = dados.length > 0 ? 'block' : 'none';
+    }
+
+    if (!lista) return;
+    
+    if (dados.length === 0) {
+        lista.innerHTML = '<li style="color: #636366; padding: 15px; font-size: 0.85em;">Nenhum cliente detectado nesta categoria.</li>';
+        return;
+    }
+
+    lista.innerHTML = dados.map(c => {
+        let labelInfo = `${c.diasInativo || 0} dias de ausência`;
+        let extraClass = "";
+
+        if (segmentKey === 'aniversario') {
+            const diaAniv = parseInt(c.dataNascimento.split('-')[2]);
+            labelInfo = `Aniversário dia ${diaAniv}`;
+            if (diaAniv === diaAtual) {
+                extraClass = "card-aniversario-hoje";
+                labelInfo = "✨ HOJE É O ANIVERSÁRIO!";
+            }
+        }
+
+        return `
+            <li class="list-item ${extraClass}" style="display: flex; justify-content: space-between; align-items: center; padding: 12px 0; border-bottom: ${extraClass ? 'none' : '1px solid #2c2c2e'};">
+                <div>
+                    <div class="crm-customer-name" style="color: #fff; font-weight: 500; font-size: 1.05em;">${c.nome}</div>
+                    <div style="color: #8e8e93; font-size: 0.85em; margin-top: 2px;">${labelInfo}</div>
+                </div>
+                <button class="btn-whatsapp-ghost" onclick="enviarWhats('${c.telefone}', '${c.nome}', '${segmentKey}')">
+                    <i class="fab fa-whatsapp"></i> WhatsApp
+                </button>
+            </li>
+        `;
+    }).join('');
+}
+
+// Toggle dos backdrops CRM ATIVO
+function toggleCRMSection(id) {
+    const section = document.getElementById(id);
+    section.classList.toggle('active');
+}
+
+// CORREÇÃO DO WHATSAPP (Remove caracteres estranhos)
+function enviarWhats(telefone, nome, segmentKey) {
+    if (!telefone) return alert("Telefone não cadastrado.");
+    
+    const telLimpo = telefone.replace(/\D/g, '');
+    const templates = getTemplates();
+    
+    // Pega o template e limpa espaços extras ou quebras de linha problemáticas
+    let msgBase = templates[segmentKey] || DEFAULT_TEXTS[segmentKey];
+    
+    // Substitui o nome (primeiro nome apenas para ser mais pessoal)
+    const primeiroNome = nome.split(' ')[0];
+    let msgFinal = msgBase.replace(/{{nome}}/g, primeiroNome);
+
+    // Codificação segura para URL (resolve o problema do caractere estranho)
+    const link = `https://api.whatsapp.com/send?phone=55${telLimpo}&text=${encodeURIComponent(msgFinal)}`;
+    
+    window.open(link, '_blank');
+}
+
+// --- BUSCA DINÂMICA COM FILTRO ---
+function filtrarClientes() {
+    const termo = document.getElementById('clienteSearch').value.toLowerCase();
+    const filtrados = clientes.filter(c => 
+        (c.nome && c.nome.toLowerCase().includes(termo)) || 
+        (c.documento && c.documento.toLowerCase().includes(termo))
+    );
+    
+    const list = document.getElementById('clientesList');
+    list.innerHTML = filtrados.map(c => `
+        <li class="list-item">
+            <div><strong>${c.nome}</strong><br><small>${c.telefone}</small></div>
+            <div class="list-item-actions">
+                <button class="btn btn-small" onclick="verPerfil('${c.id}')">Ver Perfil</button>
+                <button class="btn btn-danger btn-small" onclick="deletarCliente('${c.id}')"><i class="fas fa-trash"></i></button>
+            </div>
+        </li>
+    `).join('');
+}
+
+// Adicionar o evento de digitação na busca
+document.getElementById('clienteSearch').addEventListener('input', filtrarClientes);
+
+// Inicialização do Firebase e Listeners
+function init() {
+    db.collection('clientes').onSnapshot(snap => {
+        clientes = snap.docs.map(doc => ({id: doc.id, ...doc.data()}));
+        renderClientes();
+    });
+
+    db.collection('transacoes').onSnapshot(snap => {
+        transacoes = snap.docs.map(doc => ({id: doc.id, ...doc.data()}));
+        updateDashboard();
+        renderFinanceiro();
+    });
+}
+init();
+
+        // --- LÓGICA DE FUSO HORÁRIO FORTALEZA-CE ---
+
+        /** * Retorna a data atual no fuso de Fortaleza em formato YYYY-MM-DD
+         */
+        function getFortalezaDate(date = new Date()) {
+            return new Intl.DateTimeFormat('fr-CA', {
+                timeZone: 'America/Fortaleza',
+                year: 'numeric',
+                month: '2-digit',
+                day: '2-digit'
+            }).format(date);
+        }
+
+        /**
+         * Converte uma string YYYY-MM-DD para um objeto Date considerando o fuso -03:00
+         */
+        function parseDateFortaleza(dateStr) {
+        if (!dateStr) return null;
+            // Extrai só a parte YYYY-MM-DD da string ISO
+            const datePart = dateStr.split('T')[0];
+            return new Date(datePart + 'T00:00:00-03:00');
+        }
+        // --- NAVEGAÇÃO E MODAIS ---
+
+        function switchTab(tabName, element) {
+            document.querySelectorAll('.tab-content').forEach(t => t.style.display = 'none');
+            document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
+            document.getElementById(tabName).style.display = 'block';
+            element.classList.add('active');
+            
+            if(tabName === 'dashboard') updateDashboard();
+            if(tabName === 'crm') renderCRM('todos');
+            if(tabName === 'financeiro') renderFinanceiro();
+        }
+
+        function openModal(id) {
+            document.getElementById(id).style.display = 'block';
+            if(id === 'transacaoModal') {
+                populateClienteSelect();
+                atualizarCampoCliente(); // Garante as travas de data ao abrir
+            }
+        }
+
+        function closeModal(id) {
+            document.getElementById(id).style.display = 'none';
+            if(id === 'transacaoModal') {
+                document.getElementById('transacaoForm').reset();
+                document.getElementById('transacaoId').value = '';
+                document.getElementById('transacaoModalTitle').textContent = 'Nova Transação';
+                document.getElementById('transacaoSubmitBtn').textContent = 'Registrar Transação';
+                
+                // Reset das travas de input
+                const dataInput = document.getElementById('transacaoData');
+                dataInput.readOnly = false;
+                dataInput.value = getFortalezaDate();
+            }
+        }
+
+        window.onclick = function(event) {
+            if (event.target.classList.contains('modal')) {
+                const modalId = event.target.id;
+                closeModal(modalId);
+            }
+        }
+
+        // --- UTILITÁRIOS ---
+
+        function formatMoney(value) {
+            return `R$ ${Number(value).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+        }
+
+        function diasEntre(a, b) {
+            const diff = b - a;
+            return Math.floor(diff / (1000 * 60 * 60 * 24));
+        }
+
+        function calcularIdade(dataNascimentoStr) {
+            if (!dataNascimentoStr) return null;
+            const [ano, mes, dia] = dataNascimentoStr.split('-').map(Number);
+            const hojeStr = getFortalezaDate();
+            const hoje = parseDateFortaleza(hojeStr);
+            let idade = hoje.getFullYear() - ano;
+            const m = (hoje.getMonth() + 1) - mes;
+            if (m < 0 || (m === 0 && hoje.getDate() < dia)) idade--;
+            return idade;
+        }
+
+        // --- CLIENTES ---
+
+function renderClientes() {
+    const list = document.getElementById('clientesList');
+    if (clientes.length === 0) {
+        list.innerHTML = `<li class="list-item"><div><strong>Nenhum cliente cadastrado</strong></div></li>`;
+        return;
+    }
+
+    list.innerHTML = clientes.map(c => `
+        <li class="list-item">
+            <div>
+                <strong>${c.nome}</strong><br>
+                <small><i class="fab fa-whatsapp"></i> ${c.telefone}</small>
+            </div>
+            <div class="list-item-actions">
+                <button class="btn btn-small" onclick="verPerfil('${c.id}')">Ver Perfil</button>
+                <button class="btn btn-danger btn-small" onclick="deletarCliente('${c.id}')">
+                    <i class="fas fa-trash"></i>
+                </button>
+            </div>
+        </li>
+    `).join('');
+}
+
+ document.getElementById('clienteForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    
+    const nome = document.getElementById('clienteNome').value.trim();
+    const telefone = document.getElementById('clienteTelefone').value.trim();
+    const nascimento = document.getElementById('clienteNascimento').value || null;
+    const observacoes = document.getElementById('clienteObs').value;
+
+    // VERIFICAÇÃO DE DUPLICADO
+    const clienteExistente = clientes.find(c => 
+        c.nome.toLowerCase() === nome.toLowerCase() || 
+        c.telefone === telefone
+    );
+
+    if (clienteExistente) {
+        alert(`⚠️ Atenção: Já existe um cliente cadastrado com este nome ou telefone (${clienteExistente.nome}).`);
+        return; // Interrompe o cadastro
+    }
+
+    const novoCliente = {
+        nome: nome,
+        telefone: telefone,
+        dataNascimento: nascimento,
+        observacoes: observacoes,
+        dataCadastro: new Date().toISOString(),
+        ultimoContatoCRM: null
+    };
+
+    try {
+        await db.collection('clientes').add(novoCliente);
+        alert('✅ Cliente cadastrado com sucesso!');
+        e.target.reset();
+        closeModal('clienteModal');
+    } catch (error) {
+        console.error("Erro ao cadastrar:", error);
+        alert('Erro ao salvar no banco de dados.');
+    }
+});
+
+        // --- TRANSAÇÕES (LÓGICA PRINCIPAL DE TRAVAS) ---
+
+        function populateClienteSelect() {
+            const select = document.getElementById('transacaoCliente');
+            select.innerHTML = '<option value="">Selecione um cliente</option>' +
+                clientes.map(c => `<option value="${c.id}">${c.nome}</option>`).join('');
+        }
+
+        /**
+         * Implementa a trava de data para Receitas e libera para Despesas
+         */
+        function atualizarCampoCliente() {
+            const tipo = document.getElementById('transacaoTipo').value;
+            const clienteGroup = document.getElementById('clienteSelectGroup');
+            const dataInput = document.getElementById('transacaoData');
+            
+            if (tipo === 'receita') {
+                clienteGroup.style.display = 'block';
+                document.getElementById('transacaoCliente').required = true;
+                
+                // TRAVA: Receita sempre hoje (Fortaleza) e não editável
+                dataInput.value = getFortalezaDate();
+                dataInput.readOnly = true;
+            } else {
+                clienteGroup.style.display = 'none';
+                document.getElementById('transacaoCliente').required = false;
+                
+                // Despesa: Pode alterar data
+                dataInput.readOnly = false;
+            }
+        }
+
+        document.getElementById('transacaoTipo').addEventListener('change', atualizarCampoCliente);
+
+        document.getElementById('transacaoForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const tipo = document.getElementById('transacaoTipo').value;
+            const transacaoId = document.getElementById('transacaoId').value;
+            const clienteId = document.getElementById('transacaoCliente').value;
+            const dataEscolhida = document.getElementById('transacaoData').value;
+
+            // VALIDAÇÃO: Data da transação não pode ser anterior ao cadastro do cliente
+            if (tipo === 'receita' && clienteId) {
+                const cliente = clientes.find(c => c.id === clienteId);
+                if (cliente && cliente.dataCadastro) {
+                    if (dataEscolhida < cliente.dataCadastro) {
+                        alert(`Erro: A data da transação (${dataEscolhida}) não pode ser anterior à data de cadastro do cliente (${cliente.dataCadastro}).`);
+                        return;
+                    }
+                }
+            }
+
+            const dados = {
+                tipo: tipo,
+                clienteId: tipo === 'receita' ? clienteId : null,
+                descricao: document.getElementById('transacaoDesc').value,
+                valor: parseFloat(document.getElementById('transacaoValor').value),
+                data: dataEscolhida,
+                pagamento: document.getElementById('transacaoPagamento').value,
+                timestamp: new Date().toISOString()
+            };
+
+            if (transacaoId) {
+                await db.collection('transacoes').doc(transacaoId).update(dados);
+            } else {
+                await db.collection('transacoes').add(dados);
+            }
+
+            e.target.reset();
+            closeModal('transacaoModal');
+        });
+
+        // --- DASHBOARD E FINANCEIRO ---
+
+        function updateDashboard() {
+            const hojeFortalezaStr = getFortalezaDate();
+            const agora = parseDateFortaleza(hojeFortalezaStr);
+            
+            const inicioFiltro = new Date(agora.getTime());
+            inicioFiltro.setDate(agora.getDate() - (filtroDashboardDias - 1));
+
+            // Filtro de Transações
+            const estePeriodo = transacoes.filter(t => {
+                const dt = parseDateFortaleza(t.data);
+                return t.tipo === 'receita' && dt >= inicioFiltro && dt <= agora;
+            });
+
+            const total = estePeriodo.reduce((acc, t) => acc + Number(t.valor || 0), 0);
+            const media = estePeriodo.length > 0 ? total / estePeriodo.length : 0;
+
+            // Filtro de Novos Clientes (usando a dataCadastro gravada em Fortaleza)
+            const novos = clientes.filter(c => {
+                const dt = parseDateFortaleza(c.dataCadastro);
+                return dt >= inicioFiltro && dt <= agora;
+            }).length;
+
+            // --- calcular período anterior ---
+            const periodoDias = filtroDashboardDias;
+            const prevFim = new Date(inicioFiltro.getTime() - (1000 * 60 * 60 * 24)); // dia anterior ao inicioFiltro
+            const prevInicio = new Date(prevFim.getTime());
+            prevInicio.setDate(prevFim.getDate() - (periodoDias - 1));
+
+            // Helper para comparar com formato YYYY-MM-DD (sua lógica usa t.data string YYYY-MM-DD)
+            function inRangeDateStr(dateStr, startDate, endDate) {
+            const d = parseDateFortaleza(dateStr); // já converte pra Date no fuso
+            return d >= startDate && d <= endDate;
+            }
+
+            // Calcular valores do período anterior
+            const prevPeriodo = transacoes.filter(t => t.tipo === 'receita' && inRangeDateStr(t.data, prevInicio, prevFim));
+            const prevTotal = prevPeriodo.reduce((acc, t) => acc + Number(t.valor || 0), 0);
+            const prevCount = prevPeriodo.length;
+            const prevMedia = prevCount > 0 ? prevTotal / prevCount : 0;
+
+            const prevVisitas = prevCount;
+
+            // Novos clientes no período anterior
+            const prevNovos = clientes.filter(c => {
+            if (!c.dataCadastro) return false;
+            const dt = parseDateFortaleza(c.dataCadastro);
+            return dt >= prevInicio && dt <= prevFim;
+            }).length;
+
+            // --- setar os deltas nos cards ---
+            setDelta('receitaMes', total, prevTotal, { isCurrency: true });
+            setDelta('ticketMedio', media, prevMedia, { isCurrency: true });
+            setDelta('totalVisitas', estePeriodo.length, prevVisitas, { isCurrency: false });
+            setDelta('novosClientes', novos, prevNovos, { isCurrency: false });
+
+            document.getElementById('receitaMes').textContent = formatMoney(total);
+            document.getElementById('ticketMedio').textContent = formatMoney(media);
+            document.getElementById('totalVisitas').textContent = estePeriodo.length;
+            document.getElementById('novosClientes').textContent = novos;
+
+            renderChart(estePeriodo, inicioFiltro, agora);
+            renderDiasMovimento(estePeriodo);
+            renderFormasPagamento(estePeriodo);
+            renderTopClientes(inicioFiltro, agora);
+        }
+
+        
+
+        function setFiltroDashboard(dias) {
+            filtroDashboardDias = dias;
+            document.querySelectorAll('.filter-buttons .btn').forEach(b => {
+                b.classList.remove('btn-secondary');
+                b.classList.add('btn-small');
+            });
+            event.target.classList.add('btn-secondary');
+            updateDashboard();
+        }
+// Função para abrir o modal de detalhes do delta (detalhes do cálculo dos cards KPI DO DASHBOARD)
+function abrirModalDetalhes(cardId, current, previous, isCurrency = false) {
+  const modal = document.getElementById('detalhesModal');
+  const conteudo = document.getElementById('detalhesConteudo');
+
+  const diff = current - previous;
+  const diffAbs = Math.abs(diff);
+  const sinal = diff >= 0 ? '+' : '-';
+
+  const formatVal = (val) => isCurrency ? formatMoney(val) : val;
+
+  conteudo.innerHTML = `
+    <p><strong>Valor atual:</strong> ${formatVal(current)}</p>
+    <p><strong>Valor anterior:</strong> ${formatVal(previous)}</p>
+    <p><strong>Diferença:</strong> ${sinal} ${formatVal(diffAbs)}</p>
+  `;
+
+  modal.style.display = 'block';
+}
+
+function fecharModalDetalhes() {
+  document.getElementById('detalhesModal').style.display = 'none';
+}
+
+// Fecha modal ao clicar fora do conteúdo
+window.addEventListener('click', (e) => {
+  const modal = document.getElementById('detalhesModal');
+  if (e.target === modal) {
+    fecharModalDetalhes();
+  }
+});
+
+        // Formata percentuais com 1 casa CARTÕES ESTILO IFOOD NO DASHBOARD ---
+function formatPercent(v) {
+  return (Math.abs(v)).toFixed(1) + '%';
+}
+
+// Insere/atualiza o delta abaixo do elementId (que já contém o valor principal)
+function setDelta(elementId, current, previous, options = {}) {
+  // options: {isCurrency: boolean, label: 'texto opcional'}
+  const el = document.getElementById(elementId);
+  if (!el) return;
+
+  // remove delta antigo se existir
+  const parent = el.parentElement;
+  const existing = parent.querySelector('.delta');
+  if (existing) existing.remove();
+
+  let deltaDiv = document.createElement('div');
+  let cls = 'delta neutral';
+  let iconHtml = `<span class="icon">—</span>`;
+  let text = '—';
+
+  if (previous === 0) {
+    if (current === 0) {
+      cls = 'delta neutral';
+      iconHtml = `<span class="icon">—</span>`;
+      text = 'Sem dados anteriores';
+    } else {
+      cls = 'delta up';
+      iconHtml = `<span class="icon"><i class="fas fa-arrow-up"></i></span>`;
+      text = 'Novo';
+      if (options.isCurrency) text += ` · ${formatMoney(current)}`;
+      else text += ` · ${current}`;
+    }
+  } else {
+    const diff = current - previous;
+    const pct = (diff / previous) * 100;
+    if (diff > 0) {
+      cls = 'delta up';
+      iconHtml = `<span class="icon"><i class="fas fa-arrow-up"></i></span>`;
+      text = `${formatPercent(pct)} vs período anterior`;
+    } else if (diff < 0) {
+      cls = 'delta down';
+      iconHtml = `<span class="icon"><i class="fas fa-arrow-down"></i></span>`;
+      text = `${formatPercent(pct)} vs período anterior`;
+    } else {
+      cls = 'delta neutral';
+      iconHtml = `<span class="icon">—</span>`;
+      text = 'Sem variação';
+    }
+  }
+
+  deltaDiv.className = cls;
+deltaDiv.innerHTML = `
+  ${iconHtml}<span>${text}</span>
+  <button class="btn-info" style="margin-left:8px; font-size:12px; background:none; border:none; color:inherit; cursor:pointer;" 
+    onclick="abrirModalDetalhes('${elementId}', ${current}, ${previous}, ${options.isCurrency})" title="Ver detalhes">
+    <i class="fas fa-info-circle"></i>
+  </button>
+`;
+  parent.appendChild(deltaDiv);
+}
+
+        function renderChart(estePeriodo, inicioFiltro, agora) {
+            const ctx = document.getElementById('financeChart').getContext('2d');
+            if (financeChart) financeChart.destroy();
+
+            const labels = [];
+            const valores = [];
+
+            for (let i = 0; i < filtroDashboardDias; i++) {
+                const dia = new Date(inicioFiltro.getTime());
+                dia.setDate(inicioFiltro.getDate() + i);
+                
+                const diaStr = dia.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' });
+                labels.push(diaStr);
+                
+                const dataIso = getFortalezaDate(dia);
+                const valorDia = estePeriodo
+                    .filter(t => t.data === dataIso)
+                    .reduce((acc, t) => acc + Number(t.valor || 0), 0);
+                
+                valores.push(valorDia);
+            }
+
+            financeChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Faturamento',
+                        data: valores,
+                        borderColor: '#c5a059',
+                        tension: 0.4,
+                        fill: true,
+                        backgroundColor: 'rgba(197, 160, 89, 0.1)'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        y: { grid: { color: '#2c3138' }, ticks: { color: '#a0a0a0' } },
+                        x: { grid: { display: false }, ticks: { color: '#a0a0a0' } }
+                    }
+                }
+            });
+        }
+
+// -----------------------------
+// renderFinanceiro atualizado para respeitar filtros de data e tipo
+// -----------------------------
+function renderFinanceiro() {
+  const hojeStr = getFortalezaDate();
+  const hoje = parseDateFortaleza(hojeStr);
+
+  // Lê filtros da UI
+  const filtroInicio = document.getElementById('filtroDataInicio').value; // YYYY-MM-DD ou ''
+  const filtroFim = document.getElementById('filtroDataFim').value;
+  const filtroTipo = document.getElementById('filtroTipo') ? document.getElementById('filtroTipo').value : 'todas';
+
+  // Base: considera transacoes como array global atualizado pelo snapshot do Firestore
+  let base = [...transacoes];
+
+  // Se houver filtro por mês original (mantive a lógica para os totais do mês atual)
+  // Mas quando filtros manuais estiverem setados, calculamos total com base neles.
+  // Primeiro, aplica filtros de data se houverem
+  if (filtroInicio) {
+    base = base.filter(t => t.data >= filtroInicio);
+  }
+  if (filtroFim) {
+    base = base.filter(t => t.data <= filtroFim);
+  }
+
+  // Aplica filtro por tipo (receita/despesa/todas)
+  if (filtroTipo && filtroTipo !== 'todas') {
+    base = base.filter(t => t.tipo === filtroTipo);
+  }
+
+  // Para exibir totais (se filtros estiverem ativos, exibe sobre o intervalo filtrado;
+  // caso contrário, exibe mês atual como antes)
+  let receitas = 0, despesas = 0;
+  if (filtroInicio || filtroFim || (filtroTipo && filtroTipo !== 'todas')) {
+    // Totais com base no conjunto filtrado 'base'
+    receitas = base.filter(t => t.tipo === 'receita').reduce((acc, t) => acc + Number(t.valor || 0), 0);
+    despesas = base.filter(t => t.tipo === 'despesa').reduce((acc, t) => acc + Number(t.valor || 0), 0);
+  } else {
+    // comportamento anterior: total do mês atual
+    const esteMes = transacoes.filter(t => {
+      const dt = parseDateFortaleza(t.data);
+      return dt.getMonth() === hoje.getMonth() && dt.getFullYear() === hoje.getFullYear();
+    });
+    receitas = esteMes.filter(t => t.tipo === 'receita').reduce((acc, t) => acc + Number(t.valor || 0), 0);
+    despesas = esteMes.filter(t => t.tipo === 'despesa').reduce((acc, t) => acc + Number(t.valor || 0), 0);
+  }
+
+  document.getElementById('totalReceitas').textContent = formatMoney(receitas);
+  document.getElementById('totalDespesas').textContent = formatMoney(despesas);
+  document.getElementById('lucroLiquido').textContent = formatMoney(receitas - despesas);
+
+  // Lista de transações: ordena pelo campo data/timestamp e limita
+  const ordenadas = base
+    .sort((a, b) => {
+      if (b.data !== a.data) return b.data.localeCompare(a.data);
+      return (b.timestamp || '').localeCompare(a.timestamp || '');
+    })
+    .slice(0, 200); // limite ampliado
+
+  const list = document.getElementById('transacoesList');
+  list.innerHTML = ordenadas.map(t => {
+    const cliente = t.clienteId ? clientes.find(c => c.id === t.clienteId) : null;
+    const dataFormat = (t.data || '').split('-').reverse().join('/');
+    const tipoBadge = t.tipo === 'receita' ? 'badge-success' : 'badge-danger';
+    const sinal = t.tipo === 'receita' ? '+' : '-';
+    return `
+      <li class="list-item">
+        <div>
+          <strong>${t.descricao || '—'}</strong><br>
+          <small>${dataFormat} · ${cliente ? cliente.nome : 'Geral'} · ${t.pagamento || ''}</small>
+        </div>
+        <div class="list-item-actions">
+          <span class="badge ${tipoBadge}">
+            ${sinal} ${formatMoney(t.valor)}
+          </span>
+          <button class="btn btn-danger btn-small" onclick="deletarTransacao('${t.id}')">
+            <i class="fas fa-trash"></i>
+          </button>
+        </div>
+      </li>
+    `;
+  }).join('');
+}
+// -----------------------------
+// Funções de filtro -------------------------------------------------------FINANCEIRO--------------------------------/ UI para Transações
+// -----------------------------
+function toggleDropdownMenu(e) {
+  e.stopPropagation();
+  const dd = document.querySelector('.dropdown');
+  dd.classList.toggle('open');
+}
+
+// Fecha dropdown ao clicar fora
+document.addEventListener('click', () => {
+  const dd = document.querySelector('.dropdown');
+  if (dd) dd.classList.remove('open');
+});
+
+// Recolhe / Expande a seção de transações
+function toggleTransacoesSection() {
+  const card = document.getElementById('transacoesCard');
+  card.classList.toggle('collapsed');
+}
+
+// Aplica o filtro (lê os inputs e re-renderiza)
+function aplicarFiltroTransacoes() {
+  // apenas re-renderiza, renderFinanceiro usa os valores dos inputs
+  renderFinanceiro();
+}
+
+// Limpa os filtros e re-renderiza
+function limparFiltroTransacoes() {
+  document.getElementById('filtroDataInicio').value = '';
+  document.getElementById('filtroDataFim').value = '';
+  document.getElementById('filtroTipo').value = 'todas';
+  renderFinanceiro();
+}
+
+        // Funções de listagem auxiliares do Dashboard
+        function renderTopClientes(inicio, fim) {
+            const mapa = {};
+            transacoes.forEach(t => {
+                if(t.tipo !== 'receita' || !t.clienteId) return;
+                const dt = parseDateFortaleza(t.data);
+                if(dt >= inicio && dt <= fim) {
+                    if(!mapa[t.clienteId]) mapa[t.clienteId] = { total: 0, visitas: 0 };
+                    mapa[t.clienteId].total += t.valor;
+                    mapa[t.clienteId].visitas += 1;
+                }
+            });
+
+            const ranking = Object.entries(mapa)
+                .map(([id, info]) => ({ id, ...info, nome: clientes.find(c => c.id === id)?.nome || '???' }))
+                .sort((a, b) => b.total - a.total).slice(0, 3);
+
+            const list = document.getElementById('vipListShort');
+            list.innerHTML = ranking.length ? ranking.map((c, i) => `
+                <li class="list-item">
+                    <div><strong>${c.nome}</strong><br><small>${c.visitas} visitas · ${formatMoney(c.total)}</small></div>
+                    <span class="badge badge-gold">#${i+1}</span>
+                </li>
+            `).join('') : '<li class="list-item">Nenhum dado</li>';
+        }
+
+        function renderDiasMovimento(estePeriodo) {
+            const diasSemana = ['Domingo', 'Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado'];
+            const mapa = {};
+            estePeriodo.forEach(t => {
+                const dia = diasSemana[parseDateFortaleza(t.data).getDay()];
+                if(!mapa[dia]) mapa[dia] = { visitas: 0, valor: 0 };
+                mapa[dia].visitas++;
+                mapa[dia].valor += t.valor;
+            });
+            const ranking = Object.entries(mapa).sort((a, b) => b.visitas - a.visitas).slice(0, 3);
+            document.getElementById('diasMovimento').innerHTML = ranking.map(([dia, info]) => `
+                <li class="list-item">
+                    <div><strong>${dia}</strong><br><small>${info.visitas} visitas</small></div>
+                    <span class="badge badge-gold">${formatMoney(info.valor)}</span>
+                </li>
+            `).join('');
+        }
+
+        function renderFormasPagamento(estePeriodo) {
+            const mapa = {};
+            estePeriodo.forEach(t => {
+                const f = t.pagamento || 'Outro';
+                if(!mapa[f]) mapa[f] = 0;
+                mapa[f] += t.valor;
+            });
+            document.getElementById('formasPagamento').innerHTML = Object.entries(mapa).map(([f, v]) => `
+                <li class="list-item">
+                    <div><strong>${f.toUpperCase()}</strong></div>
+                    <span class="badge badge-success">${formatMoney(v)}</span>
+                </li>
+            `).join('');
+        }
+
+async function deletarCliente(id) {
+    if (confirm('⚠️ Você tem certeza que deseja excluir este cliente? Todos os dados serão perdidos.')) {
+        try {
+            await db.collection('clientes').doc(id).delete();
+            alert('Cliente removido com sucesso.');
+        } catch (e) {
+            alert('Erro ao excluir cliente.');
+        }
+    }
+}
+
+        // --- INICIALIZAÇÃO ---
+
+        function init() {
+            db.collection('clientes').onSnapshot(snap => {
+                clientes = snap.docs.map(doc => ({id: doc.id, ...doc.data()}));
+                renderClientes();
+                updateDashboard();
+            });
+
+            db.collection('transacoes').onSnapshot(snap => {
+                transacoes = snap.docs.map(doc => ({id: doc.id, ...doc.data()}));
+                updateDashboard();
+                renderFinanceiro();
+            });
+        }
+
+        // CRM e Outras funções (mantidas conforme original com pequenos ajustes de data)
+        function getVisitasCliente(clienteId) {
+            return transacoes
+                .filter(t => t.clienteId === clienteId && t.tipo === 'receita')
+                .sort((a, b) => a.data.localeCompare(b.data));
+        }
+
+        function getIntervaloMedioDias(visitas) {
+            if (visitas.length < 2) return null;
+            let soma = 0;
+            for (let i = 1; i < visitas.length; i++) {
+                soma += diasEntre(parseDateFortaleza(visitas[i-1].data), parseDateFortaleza(visitas[i].data));
+            }
+            return soma / (visitas.length - 1);
+        }
+
+// Funções auxiliares para cálculo de KPIs e ranking
+function calcularRanking(clienteId) {
+    // Ordena clientes pelo total gasto e retorna a posição do cliente
+    const ranking = clientes.map(c => {
+        const visitasCliente = getVisitasCliente(c.id);
+        const totalGasto = visitasCliente.reduce((acc, v) => acc + v.valor, 0);
+        return { id: c.id, nome: c.nome, totalGasto };
+    }).sort((a, b) => b.totalGasto - a.totalGasto);
+
+    const pos = ranking.findIndex(c => c.id === clienteId);
+    return pos >= 0 ? pos + 1 : null;
+}
+
+function calcularTicketMedio(visitas) {
+    if (visitas.length === 0) return 0;
+    const total = visitas.reduce((acc, v) => acc + v.valor, 0);
+    return total / visitas.length;
+}
+
+function calcularTaxaFrequencia(visitas) {
+    if (visitas.length < 2) return null;
+    let somaDias = 0;
+    for (let i = 1; i < visitas.length; i++) {
+        const dt1 = parseDateFortaleza(visitas[i-1].data);
+        const dt2 = parseDateFortaleza(visitas[i].data);
+        somaDias += (dt2 - dt1) / (1000 * 60 * 60 * 24);
+    }
+    return somaDias / (visitas.length - 1);
+}
+
+// Função atualizada para abrir o modal de perfil com dashboard detalhado
+// --- FUNÇÃO PARA VER PERFIL (DESIGN ATUALIZADO) ---
+function verPerfil(clienteId) {
+    const cliente = clientes.find(c => c.id === clienteId);
+    if (!cliente) return;
+    
+    const visitas = getVisitasCliente(clienteId);
+    const totalGasto = visitas.reduce((acc, v) => acc + (Number(v.valor) || 0), 0);
+    const ticketMedio = visitas.length > 0 ? totalGasto / visitas.length : 0;
+    const taxaFrequencia = calcularTaxaFrequencia(visitas);
+    const taxaFrequenciaStr = taxaFrequencia ? `${taxaFrequencia.toFixed(0)} dias` : 'N/A';
+
+    // Helper para formatar datas de YYYY-MM-DD para DD/MM/YYYY
+    const formatarBR = (dataStr) => {
+        if (!dataStr || dataStr.includes('T')) { 
+            // Se a data estiver no formato estranho ou vazia, tenta limpar
+            const d = dataStr ? dataStr.split('T')[0] : null;
+            return d ? d.split('-').reverse().join('/') : 'Não informada';
+        }
+        return dataStr.split('-').reverse().join('/');
+    };
+
+    document.getElementById('perfilNome').textContent = "Perfil do Cliente";
+    document.getElementById('perfilConteudo').innerHTML = `
+        <div class="stats-grid" style="grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 20px;">
+            <div class="stat-card"><h3>TOTAL GASTO</h3><div class="value">${formatMoney(totalGasto)}</div></div>
+            <div class="stat-card"><h3>VISITAS</h3><div class="value">${visitas.length}</div></div>
+            <div class="stat-card"><h3>TICKET MÉDIO</h3><div class="value">${formatMoney(ticketMedio)}</div></div>
+            <div class="stat-card"><h3>FREQ. MÉDIA</h3><div class="value">${taxaFrequenciaStr}</div></div>
+        </div>
+        
+        <div class="card" style="border-left: 4px solid var(--primary); background: var(--accent); padding: 20px;">
+            <h2 style="font-size: 14px; color: var(--primary); margin-bottom: 15px; text-transform: uppercase;">Dados Cadastrais</h2>
+            <p style="margin-bottom: 8px;"><strong>Nome:</strong> ${cliente.nome}</p>
+            <p style="margin-bottom: 8px;"><strong>Telefone:</strong> ${cliente.telefone}</p>
+            <p style="margin-bottom: 15px;"><strong>Nascimento:</strong> ${formatarBR(cliente.dataNascimento)}</p>
+            
+            <div style="border-top: 1px solid rgba(255,255,255,0.1); padding-top: 10px; font-size: 13px; color: var(--text-muted);">
+                <i class="fas fa-calendar-check"></i> Adicionado em - ${formatarBR(cliente.dataCadastro)}
+            </div>
+        </div>
+
+        <div style="margin-top: 15px; padding: 10px; font-size: 13px; color: var(--text-muted);">
+            <strong>Observações:</strong><br>
+            ${cliente.observacoes || 'Nenhuma observação registrada.'}
+        </div>
+    `;
+    openModal('perfilModal');
+}
+// Função para obter clientes aniversariantes do mês atual
+function getAniversariantes() {
+    const mesAtual = new Date().getMonth() + 1; // Janeiro = 0
+    return clientes.filter(c => {
+        if (!c.dataNascimento) return false;
+        const mesNascimento = parseInt(c.dataNascimento.split('-')[1], 10);
+        return mesNascimento === mesAtual;
+    });
+}
+
+// Função para calcular média e desvio padrão de frequências (em dias)
+function calcularMediaEDesvio(frequencias) {
+    if (frequencias.length === 0) return { media: 0, desvio: 0 };
+    const media = frequencias.reduce((a, b) => a + b, 0) / frequencias.length;
+    const variancia = frequencias.reduce((a, b) => a + Math.pow(b - media, 2), 0) / frequencias.length;
+    const desvio = Math.sqrt(variancia);
+    return { media, desvio };
+}
+
+// Função para obter clientes com queda de frequência
+function getQuedaFrequencia() {
+    const hoje = new Date();
+    const clientesComQueda = [];
+
+    clientes.forEach(cliente => {
+        const visitas = getVisitasCliente(cliente.id);
+        if (visitas.length < 2) return; // Não tem histórico suficiente
+
+        // Calcular intervalos entre visitas
+        const intervalos = [];
+        for (let i = 1; i < visitas.length; i++) {
+            const dt1 = parseDateFortaleza(visitas[i - 1].data);
+            const dt2 = parseDateFortaleza(visitas[i].data);
+            const diffDias = (dt2 - dt1) / (1000 * 60 * 60 * 24);
+            intervalos.push(diffDias);
+        }
+
+        const { media, desvio } = calcularMediaEDesvio(intervalos);
+        const ultimoContato = parseDateFortaleza(visitas[visitas.length - 1].data);
+        const diasDesdeUltimaVisita = (hoje - ultimoContato) / (1000 * 60 * 60 * 24);
+
+        if (diasDesdeUltimaVisita > media + 1.5 * desvio) {
+            clientesComQueda.push({
+                cliente,
+                diasDesdeUltimaVisita,
+                mediaFrequencia: media
+            });
+        }
+    });
+
+    return clientesComQueda;
+}
+
+// Função para obter clientes em risco de churn (score de recência)
+function getRiscoChurn(dormenciaDias = 30) {
+    const hoje = new Date();
+    return clientes.filter(cliente => {
+        const visitas = getVisitasCliente(cliente.id);
+        if (visitas.length === 0) return false;
+        const ultimoContato = parseDateFortaleza(visitas[visitas.length - 1].data);
+        const diasDesdeUltimoContato = (hoje - ultimoContato) / (1000 * 60 * 60 * 24);
+        return diasDesdeUltimoContato > dormenciaDias;
+    });
+
+// --- CONFIGURAÇÃO DE MENSAGENS ---
+const MSG_DEFAULT = "Olá {{nome}}, tudo bem? Aqui é do Jeff Barber. Notamos que faz um tempo que não nos visita e estamos com saudades! Que tal agendar um horário para esta semana?";
+
+// --- TEMPLATES DEFAULT POR SEGMENTO ---
+const CRM_TEMPLATE_DEFAULTS = {
+  aniversario: "Feliz aniversário, {{nome}}! Toda a equipe do Jeff Barber deseja um dia incrível. Que tal agendar um horário para comemorar? 🎉",
+  inativos7: "Olá {{nome}}, tudo bem? Sentimos sua falta! Faz alguns dias desde sua última visita — quer agendar um horário essa semana?",
+  inativos15: "Oi {{nome}}, estamos com saudades! Temos horários disponíveis e uma condição especial para clientes que voltam. Quer agendar?",
+  inativos30: "Olá {{nome}}, faz tempo que não te vemos. Temos uma oferta especial para você voltar: agende um horário e ganhe um desconto exclusivo.",
+  queda: "Olá {{nome}}, notamos que sua frequência diminuiu. Podemos te ajudar com um horário mais conveniente? Responda aqui que eu agendo pra você.",
+  churn: "Olá {{nome}}, sentimos sua falta! Estamos com uma condição especial para clientes que não vêm há um tempo. Quer aproveitar e voltar essa semana?"
+};
+
+// Retorna o template salvo ou o default
+function getTemplateCRM(segment) {
+  return localStorage.getItem('crm_template_' + segment) || CRM_TEMPLATE_DEFAULTS[segment] || '';
+}
+
+// Salva o template para o segmento selecionado
+function salvarTemplateCRM() {
+  const segment = document.getElementById('crmSegmentSelect').value;
+  const msg = document.getElementById('crmTemplateMsg').value.trim();
+  if (!msg) {
+    alert('O template não pode ficar vazio.');
+    return;
+  }
+  localStorage.setItem('crm_template_' + segment, msg);
+  alert('Template salvo com sucesso para: ' + segment);
+  closeModal('crmConfigModal');
+  renderCRM(); // re-renderiza listas caso precise
+}
+
+// Restaura o template default para o segmento selecionado
+function resetTemplateDefault() {
+  const segment = document.getElementById('crmSegmentSelect').value;
+  if (!confirm('Restaurar o template padrão para este segmento?')) return;
+  localStorage.removeItem('crm_template_' + segment);
+  document.getElementById('crmTemplateMsg').value = getTemplateCRM(segment);
+  alert('Template restaurado para o padrão.');
+  renderCRM();
+}
+
+// Ao abrir o modal, preencher select/textarea com o template atual
+document.getElementById('crmConfigModal')?.addEventListener('click', function(e){
+  // evita fechar o modal quando clicar no conteúdo interno
+});
+function openModal(id) {
+  document.getElementById(id).style.display = 'block';
+  if (id === 'transacaoModal') {
+      populateClienteSelect();
+      atualizarCampoCliente();
+  }
+  if (id === 'crmConfigModal') {
+      // preencher o select/textarea com o valor atual
+      const sel = document.getElementById('crmSegmentSelect');
+      const textarea = document.getElementById('crmTemplateMsg');
+      if (sel && textarea) {
+          textarea.value = getTemplateCRM(sel.value);
+          // quando trocar o segmento, atualiza o textarea
+          sel.onchange = () => textarea.value = getTemplateCRM(sel.value);
+      }
+  }
+}
+function salvarTemplateCRM() {
+    const msg = document.getElementById('crmTemplateMsg').value;
+    localStorage.setItem('crm_msg_template', msg);
+    alert('Template salvo com sucesso!');
+    closeModal('crmConfigModal');
+    renderCRM();
+}
+function enviarWhats(telefone, nomeCompleto, segmentKey = 'aniversario') {
+    if (!telefone) {
+        alert('Telefone não disponível para este cliente.');
+        return;
+    }
+    const telLimpo = telefone.replace(/\D/g, '');
+    const primeiroNome = (nomeCompleto || '').split(' ')[0] || '';
+    let template = getTemplateCRM(segmentKey) || CRM_TEMPLATE_DEFAULTS[segmentKey] || '';
+    template = template.replace(/\{\{nome\}\}/g, primeiroNome);
+    const url = `https://wa.me/55${telLimpo}?text=${encodeURIComponent(template)}`;
+    window.open(url, '_blank');
+}
+function getTemplateCRM() {
+    return localStorage.getItem('crm_msg_template') || MSG_DEFAULT;
+}
+
+// Inicializa o campo do modal com o que está salvo
+document.getElementById('crmTemplateMsg').value = getTemplateCRM();
+
+// --- LÓGICA DE FILTRAGEM CRM ---
+
+function renderCRM() {
+    const hoje = new Date();
+    const diaAtual = hoje.getDate();
+    const mesAtual = hoje.getMonth() + 1;
+    
+    // 1. Filtrar e Ordenar Aniversariantes
+    const aniversariantes = clientes
+        .filter(c => {
+            if (!c.dataNascimento) return false;
+            return parseInt(c.dataNascimento.split('-')[1]) === mesAtual;
+        })
+        .sort((a, b) => a.dataNascimento.split('-')[2] - b.dataNascimento.split('-')[2]);
+
+    const listaQueda = [];
+    const listaChurn = [];
+
+    clientes.forEach(c => {
+        const visitas = getVisitasCliente(c.id);
+        if (visitas.length === 0) return;
+
+        const ultimaVisita = parseDateFortaleza(visitas[visitas.length - 1].data);
+        const diasInativo = Math.floor((hoje - ultimaVisita) / (1000 * 60 * 60 * 24));
+        
+        if (diasInativo > 45) {
+            listaChurn.push({ ...c, diasInativo });
+        } else {
+            const freq = calcularTaxaFrequencia(visitas);
+            if (freq && diasInativo > (freq * 1.5)) {
+                listaQueda.push({ ...c, diasInativo, freqMedia: Math.floor(freq) });
+            }
+        }
+    });
+
+   // RENDERIZAR LISTAS
+    renderizarListaCRM('listaAniversariantes', aniversariantes, 'Aniversário', diaAtual);
+    renderizarListaCRM('listaQuedaFrequencia', listaQueda, 'Frequência Baixa');
+    renderizarListaCRM('listaChurn', listaChurn, 'Risco de Churn');
+    // no final da função renderCRM(...) onde você chama renderizarListaCRM:
+renderizarListaCRM('listaAniversariantes', aniversariantes, 'Aniversário', diaAtual, 'aniversario');
+renderizarListaCRM('listaInativos7', inativos7, '7+ dias', null, 'inativos7');
+renderizarListaCRM('listaInativos15', inativos15, '15+ dias', null, 'inativos15');
+renderizarListaCRM('listaInativos30', inativos30, '30+ dias', null, 'inativos30');
+renderizarListaCRM('listaQuedaFrequencia', listaQueda, 'Frequência Diminuindo', null, 'queda');
+renderizarListaCRM('listaChurn', listaChurn, 'Risco de Churn', null, 'churn');
+}
+
+function renderizarListaCRM(idElemento, dados, label, diaAtual = null, segmentKey = 'aniversario') {
+    const lista = document.getElementById(idElemento);
+    if (!lista) return;
+    
+    if (dados.length === 0) {
+        lista.innerHTML = '<li class="list-item" style="background: rgba(255,255,255,0.02); border: none;"><small>Nenhum cliente identificado.</small></li>';
+        return;
+    }
+
+    lista.innerHTML = dados.map(c => {
+        // c pode ser objeto cliente puro ou { ...cliente, diasInativo, freqMedia } dependendo da origem
+        const nome = c.nome || (c.cliente && c.cliente.nome) || 'Cliente';
+        const telefone = c.telefone || (c.cliente && c.cliente.telefone) || '';
+        let infoAdicional = "";
+        let estiloDestaque = "";
+        let tagHoje = "";
+
+        if (label === 'Aniversário' && c.dataNascimento) {
+            const partes = c.dataNascimento.split('-');
+            const diaAniversario = parseInt(partes[2]);
+            infoAdicional = `<span style="color: #34c759; font-weight: 500;">🎂 Dia ${diaAniversario}</span>`;
+            if (diaAniversario === diaAtual) {
+                estiloDestaque = "border: 1px solid #34c759; background: rgba(52, 199, 89, 0.07);";
+                tagHoje = `<span class="badge" style="background: #34c759; color: white; margin-left: 8px;">HOJE!</span>`;
+            }
+        } else if (c.diasInativo !== undefined) {
+            infoAdicional = `<i class="fas fa-clock"></i> Inativo há ${c.diasInativo} dias`;
+        } else if (c.freqMedia !== undefined) {
+            infoAdicional = `<i class="fas fa-chart-line-down"></i> Média: ${Math.round(c.freqMedia)} dias`;
+        } else {
+            infoAdicional = `<i class="fab fa-whatsapp"></i> ${telefone}`;
+        }
+
+        return `
+            <li class="list-item" style="${estiloDestaque} padding: 14px; margin-bottom: 8px; border-radius: 12px; display: flex; justify-content: space-between; align-items: center;">
+                <div style="flex:1;">
+                    <div style="display:flex; align-items:center; gap:8px; margin-bottom:6px;">
+                        <strong style="font-size:1.03em;">${nome}</strong>
+                        ${tagHoje}
+                    </div>
+                    <div style="font-size:0.9em; color: var(--text-muted);">
+                        ${infoAdicional}
+                    </div>
+                </div>
+                <div class="list-item-actions">
+                    <button class="btn btn-small" style="background:#34c759; color:white; border:none; padding:8px 12px; border-radius:8px;"
+                        onclick="enviarWhats('${telefone}', '${nome}', '${segmentKey}')">
+                        <i class="fab fa-whatsapp"></i>
+                    </button>
+                    <button class="btn btn-secondary btn-small" onclick="verPerfil('${c.id || c.clienteId || ''}')">Ver</button>
+                </div>
+            </li>
+        `;
+    }).join('');
+}
+
+function enviarWhats(telefone, nome) {
+    // Limpa o telefone (mantém apenas números)
+    const telLimpo = telefone.replace(/\D/g, '');
+    let msg = getTemplateCRM();
+    
+    // Substitui a variável {{nome}}
+    msg = msg.replace('{{nome}}', nome.split(' ')[0]);
+
+    const url = `https://wa.me/55${telLimpo}?text=${encodeURIComponent(msg)}`;
+    window.open(url, '_blank');
+}
+}
+        init();
+
+        // Função de debounce
+function debounce(func, wait) {
+    let timeout;
+    return function(...args) {
+        clearTimeout(timeout);
+        timeout = setTimeout(() => func.apply(this, args), wait);
+    };
+}
+
+// Função para filtrar clientes com debounce
+function filtrarClientes() {
+    const termo = document.getElementById('clienteSearch').value.toLowerCase();
+    const list = document.getElementById('clientesList');
+    
+    if (!termo) {
+        renderClientes(); // Mostra todos se o campo estiver vazio
+        return;
+    }
+
+    const clientesFiltrados = clientes.filter(c => 
+        (c.nome && c.nome.toLowerCase().includes(termo)) ||
+        (c.documento && c.documento.toLowerCase().includes(termo))
+    );
+
+    if (clientesFiltrados.length === 0) {
+        list.innerHTML = `<li class="list-item"><div><strong>Nenhum cliente encontrado</strong></div></li>`;
+        return;
+    }
+
+    list.innerHTML = clientesFiltrados.map(c => `
+        <li class="list-item">
+            <div>
+                <strong>${c.nome}</strong><br>
+                <small><i class="fab fa-whatsapp"></i> ${c.telefone}</small>
+            </div>
+            <div class="list-item-actions">
+                <button class="btn btn-small" onclick="verPerfil('${c.id}')">Ver Perfil</button>
+                <button class="btn btn-danger btn-small" onclick="deletarCliente('${c.id}')">
+                    <i class="fas fa-trash"></i>
+                </button>
+            </div>
+        </li>
+    `).join('');
+}
+
+// Aplicar debounce de 300ms
+const filtrarClientesDebounce = debounce(filtrarClientes, 300);
+
+// Vincular o evento de input ao campo de busca
+document.addEventListener('DOMContentLoaded', () => {
+    const searchInput = document.getElementById('clienteSearch');
+    if (searchInput) {
+        searchInput.addEventListener('input', filtrarClientesDebounce);
+    }
+});
+    </script>
+</body>
+</html>
