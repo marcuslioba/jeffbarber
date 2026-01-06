@@ -1982,6 +1982,22 @@ async function deletarCliente(id) {
     }
 }
 
+async function deletarTransacao(id) {
+  if (!id) return;
+  if (!confirm('⚠️ Deseja excluir esta transação?')) return;
+
+  try {
+    await db.collection('transacoes').doc(id).delete();
+    alert('✅ Transação excluída com sucesso.');
+    // opcional: re-renderiza a lista para atualizar UI
+    renderFinanceiro();
+    updateDashboard();
+  } catch (err) {
+    console.error('Erro ao excluir transação:', err);
+    alert('Erro ao excluir transação. Veja o console para mais detalhes.');
+  }
+}
+
         // --- INICIALIZAÇÃO ---
 
         function init() {
